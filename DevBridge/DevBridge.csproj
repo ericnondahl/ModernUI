@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\tooling\msbuild\KsaMod.props" />
+
+	<!--
+		Development only: a local HTTP control channel into the running game, so scripts
+		(and agents) can take screenshots and set up flights without clicking. Enable it in
+		a test instance, never in one you play.
+	-->
+	<PropertyGroup>
+		<ModName>DevBridge</ModName>
+		<VersionPrefix>0.1.0</VersionPrefix>
+		<AssemblyVersion>0.1.0.0</AssemblyVersion>
+		<Description>Dev tool: localhost HTTP control of KSA for screenshots and test flights.</Description>
+		<Copyright>MIT</Copyright>
+		<IncludeHarmony>false</IncludeHarmony>
+	</PropertyGroup>
+
+	<Import Project="..\tooling\msbuild\KsaMod.targets" />
+</Project>

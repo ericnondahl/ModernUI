@@ -1,0 +1,194 @@
+using System.Collections;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using Brutal.Numerics;
+using KSA;
+
+namespace DevBridge;
+
+/// <summary>
+/// What the bridge can do. The world-changing commands are adapted from the Mac port's
+/// benchmark (renancamm/ksa-macos-port, src/game/benchmark, MIT): World.NewWorld,
+/// Vehicles.Launch and Vehicles.Fly.
+/// </summary>
+public static class Commands
+{
+	public static readonly object Help = new
+	{
+		commands = new Dictionary<string, string>
+		{
+			["/status"] = "frame, flight state, controlled vehicle, altitude, speed",
+			["/screenshot?path=<png>"] = "PNG of the next frame, UI included (Mac port only); path optional",
+			["/vehicles"] = "vehicle save names, for /launch",
+			["/newgame"] = "a fresh world: clock at zero, no vehicles",
+			["/launch?vehicle=<save>&site=<id>"] = "put a vehicle save on a launch site of the home body and control it, e.g. site=CCSFS LC-39A",
+			["/fly?alt=<m>&speed=<m/s>"] = "teleport the controlled vehicle onto a vertical climb through that altitude; without speed, a circular orbit",
+			["/ui?show=0|1"] = "hide or show the game's whole UI (mods' too)",
+			["/wait?frames=<n>"] = "return after n more frames (default 60)",
+		},
+	};
+
+	// ---- status ----------------------------------------------------------------------
+
+	public static object? Status()
+	{
+		var v = Program.ControlledVehicle;
+		bool map = Program.GetController() == Program.GetMapController();
+		object? vehicle = null;
+		if (v != null)
+		{
+			double3 position = v.Orbit.StateVectors.PositionCci;
+			double3 surface = v.Orbit.StateVectors.VelocityCci - double3.Cross(v.Orbit.Parent.GetAngularVelocityCci(), position);
+			vehicle = new
+			{
+				id = v.Id,
+				body = v.Orbit.Parent is Astronomical a ? a.Id : null,
+				altitudeAsl = v.GetBarometricAltitude(),
+				surfaceSpeed = surface.Length(),
+				orbitalSpeed = v.Orbit.StateVectors.VelocityCci.Length(),
+			};
+		}
+		return new
+		{
+			frame = Bridge.Frame,
+			editor = Program.EditorFlag,
+			map,
+			inFlight = v != null && !Program.EditorFlag && !map,
+			simSpeed = Universe.GetSimulationSpeed(),
+			gameSeconds = Universe.GetElapsedSeconds(),
+			vehicle,
+		};
+	}
+
+	// ---- screenshots -----------------------------------------------------------------
+
+	[DllImport("libvulkan.1.dylib", EntryPoint = "ksaMtlScreenshot")]
+	static extern void KsaMtlScreenshot([MarshalAs(UnmanagedType.LPUTF8Str)] string path);
+
+	public static async Task<object?> Screenshot(string? path)
+	{
+		path ??= Path.Combine(Constants.DocumentsFolderPath, "devbridge", $"shot-{DateTime.Now:yyyyMMdd-HHmmss-fff}.png");
+		path = Path.GetFullPath(path);
+		Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+		if (File.Exists(path))
+			throw new ArgumentException($"{path} exists; screenshots get a new name each time");
+
+		try { KsaMtlScreenshot(path); }
+		catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException)
+		{
+			throw new PlatformNotSupportedException("screenshots need the Mac port's KSA Metal driver", e);
+		}
+
+		// The driver encodes the PNG on a queue of its own after the next present, and
+		// writes it whole; wait until it is there and its size holds.
+		var deadline = DateTime.UtcNow.AddSeconds(15);
+		long last = -1;
+		while (DateTime.UtcNow < deadline)
+		{
+			await Task.Delay(100);
+			long size = File.Exists(path) ? new FileInfo(path).Length : -1;
+			if (size > 0 && size == last)
+				return new { path, bytes = size };
+			last = size;
+		}
+		throw new TimeoutException($"no screenshot at {path} after 15 s (is the game window minimised?)");
+	}
+
+	public static async Task<object?> WaitFrames(int frames)
+	{
+		long until = Bridge.Frame + frames;
+		var deadline = DateTime.UtcNow.AddSeconds(60);
+		while (Bridge.Frame < until && DateTime.UtcNow < deadline)
+			await Task.Delay(16);
+		return new { frame = Bridge.Frame };
+	}
+
+	// ---- world ---------------------------------------------------------------------------
+
+	// The benchmark's World.NewWorld: a new game's world, its clock at the start, no vehicles.
+	public static object? NewGame()
+	{
+		JobSystems.WaitAll();
+		var fresh = UniverseData.Create();
+		fresh.GameTime = new UniverseTimeReference(UniverseTime.Zero);
+		foreach (var system in fresh.CelestialSystems)
+		{
+			system.Vehicles.Clear();
+			system.GroundClutter.Clear();
+		}
+		fresh.KittenRoster = KittenRosterData.Create();
+		Universe.DeserializeSave(fresh);
+		Program.OnGameLoaded();
+		return new { ok = true };
+	}
+
+	static LookupCollection<VehicleSave> Saves()
+	{
+		// The game keeps its vehicle saves in a private property.
+		VehicleSaves.Refresh();
+		return typeof(VehicleSaves).GetProperty("Saves", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)
+			?.GetValue(null) as LookupCollection<VehicleSave>
+			?? throw new MissingMemberException("VehicleSaves.Saves is gone; KSA changed");
+	}
+
+	public static object? VehicleSaveNames()
+	{
+		var names = new List<string>();
+		foreach (var save in (IEnumerable)Saves())
+			names.Add(save?.GetType().GetProperty("Name")?.GetValue(save)?.ToString() ?? save?.ToString() ?? "?");
+		return new { vehicles = names };
+	}
+
+	// The benchmark's Vehicles.Launch: a vehicle save on a launch site of the home body, as
+	// the game's launch menu makes it, then given control and the cameras.
+	public static object? Launch(string name, string siteId)
+	{
+		var system = Universe.CurrentSystem ?? throw new InvalidOperationException("no game loaded");
+		if (system.HomeBody is not Celestial body)
+			throw new InvalidOperationException("no home body");
+		var site = body.GetLocation(siteId) ?? throw new ArgumentException($"'{body.Id}' has no site '{siteId}'");
+		if (!Saves().TryGet(name, out var save) || save == null)
+			throw new ArgumentException($"no vehicle save '{name}'; see /vehicles");
+
+		var tree = save.Load(Program.MainViewport) ?? throw new InvalidOperationException($"'{name}' did not load");
+		var mass = tree.ComputeInertMassPropertiesAsmb() + tree.ComputePropellantMassPropertiesAsmb();
+		var (min, max) = tree.ComputeBoundingBoxAsmb();
+		var state = Vehicle.GetInitialKinematicStateForLocation(body, Universe.GetNextSimStep().NextTime,
+			site.Latitude.ToDegrees(), site.Longitude.ToDegrees(), min, max, double3.Unpack(in mass.Offset), new Random(1).RandomColor());
+		var vehicle = Vehicle.CreateVehicle(system, state.Body2Cce, state.BodyRates, system.HomeBody, name, tree.Root, state.Orbit);
+		state.Orbit.Parent!.Children.Add(vehicle);
+		vehicle.UpdatePerFrameData();
+
+		Program.ControlledVehicle = vehicle;
+		Program.MainViewport.MapCamera.SetFollow(vehicle, tidalLocking: false, changeControl: true, alert: false);
+		Program.MainViewport.BaseCamera.SetFollow(vehicle, tidalLocking: false, changeControl: true, alert: false);
+		return new { vehicle = vehicle.Id, site = siteId };
+	}
+
+	// The benchmark's Vehicles.Fly: the controlled vehicle onto a vertical climb through
+	// that altitude (the ground's turning included), or with no speed a circular orbit
+	// going east, through the game's own teleport.
+	public static object? Fly(double altitude, double? climb)
+	{
+		if (Program.ControlledVehicle is not { Parent: Celestial body } v)
+			throw new InvalidOperationException("no controlled vehicle near a body");
+		var upCce = double3.Normalize(v.GetPositionEcl() - body.GetPositionEcl());
+		var upCci = upCce.Transform(body.GetCci2Cce().Inverse());
+		var positionCci = upCci * (body.MeanRadius + altitude);
+		var spin = ((IParentBody)body).GetAngularVelocityCci();
+		if (climb == null && double3.Cross(spin, upCci).Length() < 1e-9 * spin.Length())
+			throw new InvalidOperationException("no eastward orbit over a pole");
+		var velocityCci = climb is { } speed
+			? double3.Cross(spin, positionCci) + upCci * speed
+			: double3.Normalize(double3.Cross(spin, upCci)) * Math.Sqrt(((IParentBody)body).Mu / positionCci.Length());
+		var orbit = Orbit.CreateFromStateCci(body, Universe.GetNextSimStep().NextTime, positionCci, velocityCci, new Random(1).RandomColor());
+		InputEvents.TeleportInputBuffer.Add(new InputEvents.TeleportInputData { Vehicle = v, Orbit = orbit });
+		return new { vehicle = v.Id, altitude, speed = climb };
+	}
+
+	public static object? ShowUi(bool show)
+	{
+		Program.DrawUI = show;
+		return new { drawUi = show };
+	}
+}

@@ -5,7 +5,7 @@ style of a launch webcast. Thin rings, big numbers, small caps labels. Nothing
 skeuomorphic.
 
 Status: scaffold. It has one speed ring and one altitude ring, drawn bottom-left. It
-builds, and StarMap loads it.
+builds, and StarMap loads it. See Dev loop for screenshots without clicking.
 
 ## How it works
 
@@ -42,6 +42,30 @@ builds, and StarMap loads it.
 Each start's log is in the instance's `logs/console.log`. Look for
 `Loaded mod: TelemetryHud`. Quit the game before rebuilding, because the game keeps
 the DLL loaded.
+
+## Dev loop (DevBridge)
+
+`DevBridge/` is a second mod, for development only. It runs an HTTP server on
+`127.0.0.1:7878` inside the game, so scripts can drive it. Enable it only in a test
+instance. `scripts/dev.sh` wraps it:
+
+```sh
+scripts/dev.sh restart              # quit, build both mods, start the test instance, wait until ready
+scripts/dev.sh call vehicles        # vehicle saves to launch
+scripts/dev.sh flight 12000 800     # new game, vehicle on the pad, then 12 km climbing at 800 m/s
+scripts/dev.sh shot hud             # PNG of the next frame, UI included -> screenshots/hud-<time>.png
+scripts/dev.sh call status          # flight state, altitude, speed
+```
+
+- **Screenshots** use the Mac port's driver (`ksaMtlScreenshot`): the frame as presented,
+  HUD included. Each one gets a new file name.
+- **World commands** (`newgame`, `launch`, `fly`) are adapted from the port's benchmark
+  (MIT). They run on the game's thread, after `Program.OnFrame`.
+- **The window:** `restart` puts the test instance in a half-size, always-on-top window
+  at the bottom right, and keeps the display awake while it runs. macOS gives a window
+  nobody can see almost no frames, so a full-screen game in another Space stalls, and so
+  does a game behind a **locked screen or a sleeping display**. Only the test instance's
+  settings change; your own game's don't.
 
 ## References
 
