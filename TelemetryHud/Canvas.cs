@@ -43,6 +43,38 @@ public readonly struct Canvas
 		Draw.PathStroke(color, default, Px(thickness));
 	}
 
+	public void Circle(float2 centre, float radius, ImColor8 color, float thickness) =>
+		Draw.AddCircle(Px(centre), Px(radius), color, Segments(radius), Px(thickness));
+
+	public void FillCircle(float2 centre, float radius, ImColor8 color) =>
+		Draw.AddCircleFilled(Px(centre), Px(radius), color, Segments(radius));
+
+	int Segments(float radius) => Math.Clamp((int)(Px(radius) * 0.6f), 12, 128);
+
+	public void Rect(float2 min, float2 max, ImColor8 color, float thickness) =>
+		Draw.AddRect(Px(min), Px(max), color, 0, default, Px(thickness));
+
+	public void Triangle(float2 a, float2 b, float2 c, ImColor8 color, float thickness) =>
+		Draw.AddTriangle(Px(a), Px(b), Px(c), color, Px(thickness));
+
+	/// <summary>A closed outline through the points.</summary>
+	public void Polygon(ReadOnlySpan<float2> points, ImColor8 color, float thickness)
+	{
+		foreach (var p in points)
+			Draw.PathLineTo(Px(p));
+		Draw.PathStroke(color, ImDrawFlags.Closed, Px(thickness));
+	}
+
+	/// <summary>A filled polygon; it may be concave.</summary>
+	public void FillPolygon(IReadOnlyList<float2> points, ImColor8 color)
+	{
+		if (points.Count < 3)
+			return;
+		foreach (var p in points)
+			Draw.PathLineTo(Px(p));
+		Draw.PathFillConcave(color);
+	}
+
 	/// <summary>A straight line with square ends.</summary>
 	public void Line(float2 from, float2 to, ImColor8 color, float thickness) =>
 		Draw.AddLine(Px(from), Px(to), color, Px(thickness));

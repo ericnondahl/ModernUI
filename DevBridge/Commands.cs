@@ -23,6 +23,7 @@ public static class Commands
 			["/launch?vehicle=<save>&site=<id>"] = "put a vehicle save on a launch site of the home body and control it, e.g. site=CCSFS LC-39A",
 			["/fly?alt=<m>&speed=<m/s>"] = "teleport the controlled vehicle onto a vertical climb through that altitude; without speed, a circular orbit",
 			["/console?cmd=<line>"] = "run a game console command (simspeed, refill, loadvehicle, control, exit, ...) and return its output",
+			["/set?enum=<KSA enum>&value=<name>"] = "a flight computer setting as the stock buttons set it, e.g. enum=FlightComputerAttitudeTrackTarget&value=Prograde, enum=VehicleEngine&value=MainIgnite",
 			["/ui?show=0|1"] = "hide or show the game's whole UI (mods' too)",
 			["/wait?frames=<n>"] = "return after n more frames (default 60)",
 		},
@@ -227,6 +228,21 @@ public static class Commands
 		return Directory.Exists(dir)
 			? new DirectoryInfo(dir).GetFiles("KittenSpaceAgency.*.log").OrderByDescending(f => f.LastWriteTimeUtc).FirstOrDefault()?.FullName
 			: null;
+	}
+
+	// The flight computer's settings, as the stock buttons set them (Vehicle.SetEnum):
+	// set?enum=FlightComputerAttitudeTrackTarget&value=Prograde, VehicleReferenceFrame=EnuBody,
+	// VehicleEngine=MainIgnite, FlightComputerAttitudeMode=Manual, ...
+	public static object? SetEnum(string typeName, string value)
+	{
+		var vehicle = Program.ControlledVehicle ?? throw new InvalidOperationException("no controlled vehicle");
+		var type = typeof(Vehicle).Assembly.GetType("KSA." + typeName);
+		if (type is not { IsEnum: true })
+			throw new ArgumentException($"no enum KSA.{typeName}");
+		var e = (Enum)Enum.Parse(type, value, ignoreCase: true);
+		vehicle.SetEnum(e);
+		return new { set = $"{type.Name}.{e}", attitude = vehicle.FlightComputer.AttitudeMode.ToString(),
+			track = vehicle.FlightComputer.AttitudeTrackTarget.ToString(), frame = vehicle.NavBallData.Frame.ToString() };
 	}
 
 	public static object? ShowUi(bool show)

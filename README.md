@@ -8,7 +8,11 @@ Status: early. A shaded band along the bottom of the screen in flight:
 
 - **Rings** (left): speed, filling towards circular orbital speed at the current height;
   altitude, filling towards the top of the atmosphere, then against round heights above.
-- **T+ clock** (centre): from liftoff (the vehicle losing ground contact); a vehicle that
+- **Navball** (centre): a line-drawn sphere in the HUD's style: far side hidden, ground
+  half a flat dark fill bounded by the curved horizon, grid fading towards the edge, flat
+  glyphs for prograde/retrograde, normal/antinormal, radial out/in, target and burn, all
+  from the game's own navball data. Under it: frame, heading, pitch and roll.
+- **T+ clock** (between the rings and the navball): from liftoff (the vehicle losing ground contact); a vehicle that
   never touched the ground counts from when it was made. Held at 00:00:00 on the pad.
 - **Bars** (right): throttle (OFF while no engine burns) and each propellant's fill,
   summed over the vehicle's tanks as the game's Resources panel does.
@@ -78,6 +82,8 @@ scripts/dev.sh gallery v3                 # the same four states every time: orb
 scripts/dev.sh call status                # flight state, altitude, speed
 scripts/dev.sh call vehicles              # vehicles to launch (yours and the defaults)
 scripts/dev.sh console simspeed 10        # any game console command, with its log output
+scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget --data-urlencode value=Prograde
+                                          # flight computer settings, as the stock buttons set them
 ```
 
 - **Screenshots** use the Mac port's driver (`ksaMtlScreenshot`): the frame as presented,

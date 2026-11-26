@@ -22,7 +22,8 @@ public readonly record struct Telemetry(
 	bool BeforeLiftoff,
 	float Throttle,
 	bool EnginesOn,
-	IReadOnlyList<Propellant> Propellants)
+	IReadOnlyList<Propellant> Propellants,
+	NavballState Navball)
 {
 	public static Telemetry Read(Vehicle vehicle)
 	{
@@ -50,7 +51,8 @@ public readonly record struct Telemetry(
 			BeforeLiftoff: beforeLiftoff,
 			Throttle: vehicle.GetManualThrottle(),
 			EnginesOn: vehicle.IsAnyEngineActive(),
-			Propellants: ReadPropellants(vehicle.Parts));
+			Propellants: ReadPropellants(vehicle.Parts),
+			Navball: NavballState.Read(vehicle));
 	}
 
 	// As the game's Resources panel gathers its rows (ResourcesPanel.Gather): every

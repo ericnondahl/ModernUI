@@ -47,6 +47,7 @@ public static class Hud
 	const float Sweep = MathF.PI * 1.5f;
 
 	const float ClockSize = 48;
+	const float NavballRadius = 96;
 	const float BarWidth = 250;
 	const float BarStroke = 4;
 	const float BarRowGap = 42;
@@ -68,7 +69,15 @@ public static class Hud
 		for (int i = 0; i < rings.Length; i++)
 			DrawRing(c, new float2(Margin + Radius + i * (2 * Radius + RingGap), centreY), labelsY, rings[i]);
 
-		DrawClock(c, new float2(c.Size.X / 2, centreY), labelsY, t);
+		// The navball in the centre, its bottom on the same line as the rings' bottoms.
+		float ballY = centreY + Radius - NavballRadius;
+		Navball.Draw(c, new float2(c.Size.X / 2, ballY), NavballRadius, t.Navball);
+		DrawAttitude(c, new float2(c.Size.X / 2, labelsY), t.Navball);
+
+		// The clock between the rings and the navball.
+		float ringsRight = Margin + rings.Length * 2 * Radius + (rings.Length - 1) * RingGap;
+		float ballLeft = c.Size.X / 2 - NavballRadius;
+		DrawClock(c, new float2((ringsRight + ballLeft) / 2, centreY), labelsY, t);
 
 		var bars = new List<Bar> { ThrottleBar(t) };
 		foreach (var p in t.Propellants.Take(MaxPropellantBars))
@@ -80,7 +89,7 @@ public static class Hud
 		// The strip the band's items take, from the tallest (rings or the bar stack) down,
 		// with a little air: the game's console messages fade in above it.
 		float barsTop = labelsY - (bars.Count - 1) * BarRowGap - 16 - SmallSize;
-		ReservedPixels = c.Px(c.Size.Y - Math.Min(centreY - Radius, barsTop) + 20);
+		ReservedPixels = c.Px(c.Size.Y - Math.Min(Math.Min(centreY - Radius, ballY - NavballRadius), barsTop) + 20);
 	}
 
 	// ---- the gauges -------------------------------------------------------------------
@@ -147,6 +156,25 @@ public static class Hud
 		c.Text(Fonts.SemiBold, ClockSize, new float2(left + prefixWidth + space, centre.Y), Align.Left, colour, digits, tabular: true);
 
 		c.Text(Fonts.Medium, SmallSize, new float2(centre.X, labelsY), Align.Center, Dim, t.VehicleId.ToUpperInvariant(), tracking: Tracking);
+	}
+
+	// "SURF   HDG 090   PITCH 45   ROLL 0" under the navball: the frame, then the nose's
+	// attitude in it.
+	static void DrawAttitude(Canvas c, float2 at, NavballState s)
+	{
+		var (heading, pitch, roll) = Navball.Attitude(s);
+		string frame = s.Frame switch
+		{
+			KSA.VehicleReferenceFrame.EclBody => "STAR",
+			KSA.VehicleReferenceFrame.EnuBody => "SURF",
+			KSA.VehicleReferenceFrame.Lvlh => "ORBT",
+			KSA.VehicleReferenceFrame.VlfBody => "OVEL",
+			KSA.VehicleReferenceFrame.BurnBody => "BURN",
+			KSA.VehicleReferenceFrame.Dock => "TGT",
+			_ => "",
+		};
+		string text = $"{frame}   HDG {heading:000}   PITCH {pitch:0}   ROLL {roll:0}";
+		c.Text(Fonts.Medium, SmallSize, at, Align.Center, Dim, text, tracking: Tracking, tabular: true);
 	}
 
 	// Label left and value right on one line, the bar under them; right edge at `right`.
