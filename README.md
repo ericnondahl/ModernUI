@@ -118,6 +118,12 @@ scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget 
   full-screen game in another Space stalls, and so does a game behind a **locked screen
   or a sleeping display**. `restart` keeps the display awake while the game runs.
 
+**Demo video:** `scripts/demo.sh` flies a mission through the HUD (pad, liftoff, ascent in
+CLEAN mode, upper atmosphere, orbit with the autopilot, a burn planned in map view, a
+target, an EVA), records each phase from the screen (ffmpeg, avfoundation) with title
+cards between them, and writes `demo/ModernUI-demo.mp4` (1080p30). It needs Screen
+Recording permission and the screen unlocked; keep the mouse off the game window.
+
 **Navball test:** set `"DebugNavballTumble": true` in the profile's
 `ModernUI/settings.json` and restart: the navball turns through every orientation
 over time, so `scripts/burst.sh` covers hundreds of attitudes in a few seconds.
