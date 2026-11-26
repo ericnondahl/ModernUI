@@ -4,8 +4,8 @@ A Kitten Space Agency UI mod: flight telemetry as flat, black-and-white gauges i
 style of a launch webcast. Thin rings, big numbers, small caps labels. Nothing
 skeuomorphic.
 
-Status: scaffold. It has one speed ring and one altitude ring, drawn bottom-left. It has
-not been compiled yet, because compiling needs the game's DLLs (see Setup).
+Status: scaffold. It has one speed ring and one altitude ring, drawn bottom-left. It
+builds, and StarMap loads it.
 
 ## How it works
 
@@ -27,15 +27,21 @@ not been compiled yet, because compiling needs the game's DLLs (see Setup).
 1. Game: download the **Linux** build from https://ksa.ahwoo.com into `~/Downloads`, then
    run `./port.sh` in `~/Downloads/ksa-macos-port`. That makes
    `~/Applications/Kitten Space Agency.app`.
-2. Mod loader: install [Borea](https://github.com/KSAModding/Borea) (0.6.16 or newer). It
-   finds the app and installs StarMap.
-3. Build: `dotnet build -c Release`. The output goes to `Release/TelemetryHud/` and is
-   copied to `~/Documents/My Games/Kitten Space Agency/mods/TelemetryHud/`.
-4. Enable the mod in Borea (or in the mods folder's `manifest.toml`) and start the game
-   through Borea, not directly; starting the app directly skips StarMap.
+2. Mod loader: install [Borea](https://github.com/KSAModding/Borea), create an instance,
+   and install StarMap in it.
+3. Paths: copy `Directory.Build.local.props.example` to `Directory.Build.local.props`
+   and fill in the instance ID (a folder name under
+   `~/Library/Application Support/Borea/Instances/`) and the StarMap version (under
+   `.../Borea/Loaders/StarMap/`). The file is gitignored.
+4. Build: `dotnet build -c Release`. The build copies the mod into the instance's `mods`
+   folder.
+5. The first time only, enable it: `/Applications/Borea.app/Contents/MacOS/borea enable TelemetryHud`.
+6. Run it: `/Applications/Borea.app/Contents/MacOS/borea launch <instance name>`, or
+   press Play in Borea. Starting the app directly skips StarMap.
 
-If the build can't find `StarMap.API.dll` because Borea keeps mods in a per-instance
-folder, set `KSA_MODS_DIR` to that instance's mods folder.
+Each start's log is in the instance's `logs/console.log`. Look for
+`Loaded mod: TelemetryHud`. Quit the game before rebuilding, because the game keeps
+the DLL loaded.
 
 ## References
 

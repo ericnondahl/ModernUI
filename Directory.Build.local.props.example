@@ -1,0 +1,10 @@
+<Project>
+  <!-- Copy to Directory.Build.local.props and fill in. Borea keeps these under
+       ~/Library/Application Support/Borea/ on macOS. -->
+  <PropertyGroup>
+    <!-- The Borea instance you test in; the build copies the mod into its mods folder. -->
+    <KSAModsDir>$(HOME)/Library/Application Support/Borea/Instances/INSTANCE-ID/mods/</KSAModsDir>
+    <!-- The StarMap version Borea installed. -->
+    <StarMapApiDll>$(HOME)/Library/Application Support/Borea/Loaders/StarMap/0.5.4/StarMap.API.dll</StarMapApiDll>
+  </PropertyGroup>
+</Project>

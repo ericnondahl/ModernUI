@@ -1,12 +1,27 @@
 <Project>
   <!--
-    Mac defaults for KSAModTools. Its own defaults are Windows paths, and this file is
-    imported before tooling/msbuild/KsaMod.props, so these win. Override either with the
-    KSA_DIR / KSA_MODS_DIR environment variables.
-
-    On the Mac port, the game's DLLs (KSA.dll, Brutal.*.dll) live inside the app bundle.
+    Machine-specific paths go in Directory.Build.local.props (gitignored); copy
+    Directory.Build.local.props.example to start. This file is imported before
+    tooling/msbuild/KsaMod.props, so these win over its Windows defaults.
   -->
+  <Import Project="Directory.Build.local.props" Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.local.props')" />
+
+  <!-- On the Mac port, the game's DLLs (KSA.dll, Brutal.*.dll) live inside the app bundle. -->
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
     <KSADir Condition="'$(KSADir)' == '' and '$(KSA_DIR)' == ''">$(HOME)/Applications/Kitten Space Agency.app/Contents/Resources/</KSADir>
   </PropertyGroup>
+
+  <!--
+    Borea installs StarMap in its own Loaders folder, not in the mods folder where
+    KSAModTools looks. When StarMapApiDll is set, reference it from there instead.
+  -->
+  <PropertyGroup Condition="'$(StarMapApiDll)' != ''">
+    <IncludeStarMapApi>false</IncludeStarMapApi>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(StarMapApiDll)' != ''">
+    <Reference Include="StarMap.API">
+      <HintPath>$(StarMapApiDll)</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
 </Project>
