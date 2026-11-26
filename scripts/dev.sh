@@ -112,7 +112,12 @@ case "$cmd" in
   restart)
     quit_game
     dev_window
-    (cd "$REPO" && dotnet build TelemetryHud.slnx -c Release -v quiet -nologo | grep -E "error|warn" || true)
+    # A failed build stops here: starting the game would test the previous build.
+    if ! out=$(cd "$REPO" && dotnet build TelemetryHud.slnx -c Release -v quiet -nologo 2>&1); then
+      echo "$out" | grep -E "error" | sed 's| \[.*||' | sort -u >&2
+      die "build failed; the game was not started"
+    fi
+    echo "$out" | grep -E "warning CS" | sed 's| \[.*||' | sort -u || true
     "$BOREA" enable TelemetryHud >/dev/null 2>&1 || true
     "$BOREA" enable DevBridge >/dev/null 2>&1 || true
     # Borea can take a moment to notice the old game is gone; retry the launch.

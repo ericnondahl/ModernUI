@@ -71,8 +71,9 @@ public static class Hud
 
 		// The navball in the centre, its bottom on the same line as the rings' bottoms.
 		float ballY = centreY + Radius - NavballRadius;
-		Navball.Draw(c, new float2(c.Size.X / 2, ballY), NavballRadius, t.Navball);
-		DrawAttitude(c, new float2(c.Size.X / 2, labelsY), t.Navball);
+		var ball = Settings.Current.DebugNavballTumble ? Navball.Tumble(t.Navball) : t.Navball;
+		Navball.Draw(c, new float2(c.Size.X / 2, ballY), NavballRadius, ball);
+		DrawAttitude(c, new float2(c.Size.X / 2, labelsY), ball);
 
 		// The clock between the rings and the navball.
 		float ringsRight = Margin + rings.Length * 2 * Radius + (rings.Length - 1) * RingGap;

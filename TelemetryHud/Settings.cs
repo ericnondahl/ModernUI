@@ -15,6 +15,12 @@ public class Settings
 	/// <summary>Skip the game's own gauge panels while the HUD shows.</summary>
 	public bool HideStockGauges { get; set; } = true;
 
+	/// <summary>
+	/// Testing only, not in the menu: the navball tumbles through every orientation over
+	/// time instead of following the vehicle, so a burst of screenshots covers them all.
+	/// </summary>
+	public bool DebugNavballTumble { get; set; }
+
 	public static Settings Current { get; private set; } = new();
 
 	static string? _path;

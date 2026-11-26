@@ -66,6 +66,14 @@ public static class Navball
 		return new double3(Math.Cos(e) * Math.Sin(h), Math.Cos(e) * Math.Cos(h), Math.Sin(e));
 	}
 
+	/// <summary>Testing: the same markers on a ball turning about all three axes at once.</summary>
+	public static NavballState Tumble(NavballState s)
+	{
+		double t = Environment.TickCount64 / 1000.0;
+		var q = QuaternionEx.CreateFromRollYawPitchRadians(new double3(0.29 * t, 1.1 * t, 0.43 * t));
+		return s with { Navball2Helm = q };
+	}
+
 	public static void Draw(Canvas c, float2 centre, float radius, NavballState s)
 	{
 		var q = s.Navball2Helm;
@@ -74,7 +82,7 @@ public static class Navball
 		// The ball: dark underlay, sky, then the ground half on top.
 		c.FillCircle(centre, radius + 1, Under);
 		c.FillCircle(centre, radius, Sky);
-		FillGround(c, centre, radius, q, qInverse);
+		FillGround(c, centre, radius, q);
 
 		// Grid: elevation circles every 30 degrees, headings every 30 degrees.
 		foreach (double el in (double[])[-60, -30, 30, 60])
@@ -166,75 +174,53 @@ public static class Navball
 		c.Text(Fonts.SemiBold, size, at, Align.Center, new ImColor8(255, 255, 255, a), text, shadow: false);
 	}
 
-	// The visible part of the ground hemisphere (frame up < 0): bounded by the ground's arc
-	// of the ball's rim and the visible half of the horizon circle.
-	static void FillGround(Canvas c, float2 centre, float radius, doubleQuat q, doubleQuat qInverse)
+	// The visible part of the ground hemisphere (frame up < 0), filled exactly.
+	//
+	// A point at (x, y) on the ball's face (radius 1) is the helm direction
+	// (sqrt(1 - x² - y²), x, y). It is ground when that direction has a negative "up"
+	// component: dot(U, helm) < 0, with U the frame's up in helm coordinates. Along a ray
+	// from the centre at angle a, at distance s = sin(p) (p from 0 to 90 degrees), that is
+	// U.X cos p + k sin p with k = U.Y cos a + U.Z sin a: a sinusoid over a quarter turn,
+	// so it changes sign at most once, at s* = |U.X| / sqrt(U.X² + k²). Each ray is then
+	// all ground, all sky, ground out to s*, or ground from s* to the rim, and the ground
+	// fills as thin slices between neighbouring rays. No polygon to assemble, so nothing
+	// to get wrong as the ball turns.
+	static void FillGround(Canvas c, float2 centre, float radius, doubleQuat q)
 	{
-		const int rimSteps = 128, horizonSteps = 192;
-		var ground = new bool[rimSteps];
-		int groundCount = 0;
-		for (int i = 0; i < rimSteps; i++)
+		const int rays = 180;
+		var up = FrameToHelm(double3.UnitZ, q);
+		Span<float2> inner = stackalloc float2[rays + 1], outer = stackalloc float2[rays + 1];
+		Span<bool> any = stackalloc bool[rays + 1];
+		for (int i = 0; i <= rays; i++)
 		{
-			double t = 2 * Math.PI * i / rimSteps;
-			var rimHelm = new double3(0, Math.Cos(t), Math.Sin(t));
-			// A margin, so a horizon lying on the rim (nose straight up or down) doesn't
-			// flicker between ground and sky.
-			ground[i] = HelmToFrame(rimHelm, qInverse).Z < -0.02;
-			if (ground[i])
-				groundCount++;
+			double a = 2 * Math.PI * i / rays;
+			var dir = new float2((float)Math.Cos(a), (float)Math.Sin(a));
+			double k = up.Y * Math.Cos(a) + up.Z * Math.Sin(a);
+			bool centreGround = up.X < 0, rimGround = k < 0;
+			double crossing = Math.Abs(up.X) / Math.Sqrt(up.X * up.X + k * k + 1e-12);
+			(double from, double to) = (centreGround, rimGround) switch
+			{
+				(true, true) => (0d, 1d),
+				(false, false) => (0d, 0d),
+				(true, false) => (0d, crossing),
+				(false, true) => (crossing, 1d),
+			};
+			any[i] = to > from;
+			inner[i] = centre + dir * (float)(from * radius);
+			outer[i] = centre + dir * (float)(to * radius);
 		}
-		if (groundCount == 0)
-		{
-			// No ground on the rim: all sky, or (nose straight down) all ground.
-			if (HelmToFrame(double3.UnitX, qInverse).Z < 0)
-				c.FillCircle(centre, radius, Ground);
-			return;
-		}
-		if (groundCount == rimSteps)
-		{
-			c.FillCircle(centre, radius, Ground);
-			return;
-		}
-
-		// The rim's ground run, in order: it starts after a sky sample.
-		int start = Enumerable.Range(0, rimSteps).First(i => ground[i] && !ground[(i - 1 + rimSteps) % rimSteps]);
-		var points = new List<float2>();
-		for (int k = 0; k < groundCount; k++)
-		{
-			double t = 2 * Math.PI * ((start + k) % rimSteps) / rimSteps;
-			points.Add(centre + new float2((float)Math.Cos(t), (float)Math.Sin(t)) * radius);
-		}
-
-		// The horizon's visible run, joined so it runs from the rim run's end back to its start.
-		var horizon = new List<float2>();
-		var visible = new bool[horizonSteps];
-		var screen = new float2[horizonSteps];
-		for (int i = 0; i < horizonSteps; i++)
-		{
-			var h = FrameToHelm(Direction(360.0 * i / horizonSteps, 0), q);
-			visible[i] = h.X > 0;
-			screen[i] = centre + new float2((float)h.Y, (float)h.Z) * radius;
-		}
-		int first = Enumerable.Range(0, horizonSteps).FirstOrDefault(i => visible[i] && !visible[(i - 1 + horizonSteps) % horizonSteps], -1);
-		if (first >= 0)
-			for (int k = 0; k < horizonSteps && visible[(first + k) % horizonSteps]; k++)
-				horizon.Add(screen[(first + k) % horizonSteps]);
-		if (horizon.Count < 2)
-		{
-			// The horizon is (nearly) the rim itself: the face is all one side.
-			if (HelmToFrame(double3.UnitX, qInverse).Z < 0)
-				c.FillCircle(centre, radius, Ground);
-			return;
-		}
-		if (Distance(horizon[0], points[^1]) > Distance(horizon[^1], points[^1]))
-			horizon.Reverse();
-		points.AddRange(horizon);
-		c.FillPolygon(points, Ground);
+		// Slices drawn without anti-aliased edges, so neighbours don't overlap into seams;
+		// the rim and horizon lines drawn over the fill's edges keep it crisp.
+		ref var flags = ref c.Draw.Flags;
+		var saved = flags;
+		flags &= ~ImDrawListFlags.AntiAliasedFill;
+		for (int i = 0; i < rays; i++)
+			if (any[i] || any[i + 1])
+				c.FillQuad(inner[i], outer[i], outer[i + 1], inner[i + 1], Ground);
+		flags = saved;
 	}
 
-	static float Distance(float2 a, float2 b) => (a - b).Length();
-
-	enum MarkerKind { Prograde, Retrograde, Normal, Antinormal, RadialOut, RadialIn, Target, Burn }
+		enum MarkerKind { Prograde, Retrograde, Normal, Antinormal, RadialOut, RadialIn, Target, Burn }
 
 	// Flat glyphs: circles, triangles and squares, each with a small difference for its opposite.
 	static void Marker(Canvas c, float2 centre, float radius, double3? helm, MarkerKind kind)

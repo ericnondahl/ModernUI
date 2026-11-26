@@ -80,6 +80,7 @@ KSA_VEHICLE=Hunter scripts/dev.sh flight  # new game, the Hunter on the pad (KSA
 scripts/dev.sh shot hud                   # PNG of the next frame, UI included -> screenshots/hud-<time>.png
 scripts/dev.sh gallery v3                 # the same four states every time: orbit, 45 km, 12 km, pad
 scripts/dev.sh call status                # flight state, altitude, speed
+scripts/burst.sh tumble 32                # 32 quick shots of the navball, tiled into one contact sheet
 scripts/dev.sh call vehicles              # vehicles to launch (yours and the defaults)
 scripts/dev.sh console simspeed 10        # any game console command, with its log output
 scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget --data-urlencode value=Prograde
@@ -99,6 +100,10 @@ scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget 
 - **Why the window:** macOS gives a window nobody can see almost no frames, so a
   full-screen game in another Space stalls, and so does a game behind a **locked screen
   or a sleeping display**. `restart` keeps the display awake while the game runs.
+
+**Navball test:** set `"DebugNavballTumble": true` in the profile's
+`TelemetryHud/settings.json` and restart: the navball turns through every orientation
+over time, so `scripts/burst.sh` covers hundreds of attitudes in a few seconds.
 
 ## References
 

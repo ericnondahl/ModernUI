@@ -65,6 +65,13 @@ public readonly struct Canvas
 		Draw.PathStroke(color, ImDrawFlags.Closed, Px(thickness));
 	}
 
+	/// <summary>A filled convex quadrilateral (two triangles; may be degenerate).</summary>
+	public void FillQuad(float2 a, float2 b, float2 c, float2 d, ImColor8 color)
+	{
+		Draw.AddTriangleFilled(Px(a), Px(b), Px(c), color);
+		Draw.AddTriangleFilled(Px(a), Px(c), Px(d), color);
+	}
+
 	/// <summary>A filled polygon; it may be concave.</summary>
 	public void FillPolygon(IReadOnlyList<float2> points, ImColor8 color)
 	{
