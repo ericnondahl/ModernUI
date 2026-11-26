@@ -105,3 +105,26 @@ static class ConsoleAboveHud
 			viewportSize.Y = Math.Max(viewportSize.Y - Hud.ReservedPixels, 0);
 	}
 }
+
+/// <summary>
+/// The game draws its alerts (low supplies, loading, warnings) from a fixed 150 units down
+/// the screen, which is where the HUD's time block is on most screens. While the HUD shows
+/// they start under the time block instead. (Patched on each list rather than on
+/// Alert.DrawAll, which is small enough for the JIT to inline, out of Harmony's reach.)
+/// </summary>
+[HarmonyPatch]
+static class AlertsBelowTime
+{
+	static IEnumerable<System.Reflection.MethodBase> TargetMethods() =>
+	[
+		AccessTools.Method(typeof(LoadAlert), nameof(LoadAlert.DrawList)),
+		AccessTools.Method(typeof(FixedAlert), nameof(FixedAlert.DrawList)),
+		AccessTools.Method(typeof(TimedAlert), nameof(TimedAlert.DrawList)),
+	];
+
+	static void Prefix(ref float cursorY)
+	{
+		if (Hud.Showing && cursorY < Hud.AlertsTop)
+			cursorY = Hud.AlertsTop;
+	}
+}

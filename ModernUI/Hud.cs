@@ -22,6 +22,9 @@ public static class Hud
 	/// <summary>Whether the HUD drew last frame; the stock gauges hide while it does.</summary>
 	public static bool Showing { get; private set; }
 
+	/// <summary>Where the game's alerts start, under the time block (ImGui units), as of last frame.</summary>
+	public static float AlertsTop { get; private set; }
+
 	/// <summary>Height of the screen's bottom strip the HUD uses, in pixels, as of last frame.</summary>
 	public static float ReservedPixels { get; private set; }
 
@@ -99,6 +102,13 @@ public static class Hud
 
 		// Time at the top centre: T+, universal time, the warp control.
 		DrawTime(c, c.Size.X / 2, t, clean);
+		// Under the time block and the mode label's place.
+		AlertsTop = c.Px(TimeTop + ClockSize + 128);
+		// The game's crew clock (the soonest life support deadline, any vessel) hangs under
+		// the stock time gauge, which is hidden; it hangs under ours instead.
+		const float anchorWidth = 400;
+		KSA.CrewClock.SetAnchor(c.Px(new float2(c.Size.X / 2 - anchorWidth / 2, TimeTop)),
+			c.Px(new float2(anchorWidth, ClockSize + 124)));
 		DrawModeToast(c, c.Size.X / 2, mode);
 
 		// Staging at the top left, the autopilot at the top right, below the game's menu bar

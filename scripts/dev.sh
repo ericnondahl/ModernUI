@@ -14,7 +14,8 @@
 #                                     always-on-top window, so macOS keeps drawing it
 #
 # Env: KSA_INSTANCE (Borea instance name, default Test), KSA_VEHICLE (vehicle save for
-# flight), KSA_SITE (launch site, default "CCSFS LC-39A"), KSA_DEVBRIDGE_PORT (default 7878).
+# flight), KSA_SITE (launch site, default "CCSFS LC-39A"), KSA_DEVBRIDGE_PORT (default 7878),
+# KSA_WINDOW (window size such as 1600x900, centred; default half the screen).
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -92,15 +93,23 @@ path, sw, sh = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
 text = open(path).read()
 head, sep, rest = text.partition("[display]\n")
 body, nxt, tail = rest.partition("\n[")
-w, h = sw // 2, sh // 2  # half the display, its shape kept, so the HUD lays out as in play
+import os
+size = os.environ.get("KSA_WINDOW", "")
+if "x" in size:
+    # A given size (a demo recording, say), centred.
+    w, h = (int(n) for n in size.split("x"))
+    pos = ((sw - w) // 2, max((sh - h) // 2, 40))
+else:
+    w, h = sw // 2, sh // 2  # half the display, its shape kept, so the HUD lays out as in play
+    pos = (sw - w - 20, sh - h - 60)  # bottom right
 values = {"mode": '"Windowed"', "alwaysOnTop": "true", "width": w, "height": h,
-          "posX": sw - w - 20, "posY": sh - h - 60}  # bottom right
+          "posX": pos[0], "posY": pos[1]}
 for key, value in values.items():
     body, n = re.subn(rf"^{key} = .*$", f"{key} = {value}", body, flags=re.M)
     if n == 0:
         body += f"\n{key} = {value}"
 open(path, "w").write(head + sep + body + nxt + tail)
-print(f"test instance: {w}x{h} window on top, bottom right of the {sw}x{sh} display")
+print(f"test instance: {w}x{h} window on top at {pos} on the {sw}x{sh} display")
 PY
   # Straight into the game: no CONFIGURATION screen (its "Always Show" box), no changelog,
   # no update check. The game starts with its own start settings (a rocket in orbit).
