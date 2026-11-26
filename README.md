@@ -86,6 +86,7 @@ scripts/dev.sh call vehicles              # vehicles to launch (yours and the de
 scripts/dev.sh call click --data-urlencode button=STAGE   # click a HUD button through ImGui
 scripts/dev.sh call burn --data-urlencode dv=100          # a test burn at the next apoapsis
 scripts/dev.sh call camera --data-urlencode mode=Map      # map view (Orbit: back to flight)
+scripts/dev.sh call target --data-urlencode id=Gemini7    # set a target (empty id clears it)
 scripts/dev.sh console simspeed 10        # any game console command, with its log output
 scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget --data-urlencode value=Prograde
                                           # flight computer settings, as the stock buttons set them

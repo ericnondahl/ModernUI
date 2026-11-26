@@ -103,6 +103,7 @@ public static class Hud
 		// Cards that appear when they apply, under the autopilot: the next burn, and in map
 		// view the burn being edited.
 		rightColumn = Burns.DrawControl(c, c.Size.X - Margin, rightColumn, vehicle, t.Now.Seconds());
+		rightColumn = Rendezvous.Draw(c, c.Size.X - Margin, rightColumn, vehicle, t.Now);
 		Burns.DrawEditor(c, c.Size.X - Margin, rightColumn, t.Now.Seconds());
 
 		var bars = new List<Bar> { ThrottleBar(t) };
@@ -198,6 +199,15 @@ public static class Hud
 	}
 
 	// ---- formatting -----------------------------------------------------------------------
+
+	public static string FormatLength(double metres)
+	{
+		var (value, unit) = SplitDistance(metres);
+		return $"{value} {unit}";
+	}
+
+	public static string FormatCountdown(double seconds) =>
+		!double.IsFinite(seconds) ? "—" : (seconds < 0 ? "T+" : "T-") + FormatDuration(Math.Abs(seconds));
 
 	static (string Value, string Unit) SplitDistance(double metres) => metres switch
 	{

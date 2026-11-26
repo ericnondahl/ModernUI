@@ -29,6 +29,7 @@ public static class Commands
 			["/buttons"] = "TelemetryHud's buttons by id",
 			["/click?button=<id>"] = "click a TelemetryHud button through ImGui's input, as the mouse would",
 			["/burn?dv=<m/s>"] = "a prograde burn at the next apoapsis, selected for editing",
+			["/target?id=<vehicle or body>"] = "set the controlled vehicle's target (empty id clears it)",
 			["/camera?mode=Orbit|Map|Free|IVA|Fixed"] = "switch the view (map view, flight view...)",
 			["/ui?show=0|1"] = "hide or show the game's whole UI (mods' too)",
 			["/wait?frames=<n>"] = "return after n more frames (default 60)",
@@ -348,6 +349,17 @@ public static class Commands
 		InputEvents.BurnUpdateBuffer.Add(new InputEvents.BurnUpdateData { FlightComputer = v.FlightComputer, Burn = burn, AddBurn = true });
 		Program.ActiveBurn = burn;
 		return new { burnAt = at.Seconds(), inSeconds = at.Seconds() - now.Seconds(), prograde };
+	}
+
+	// The controlled vehicle's target, by id (another vehicle or a body); empty clears it.
+	public static object? SetTarget(string id)
+	{
+		var v = Program.ControlledVehicle ?? throw new InvalidOperationException("no controlled vehicle");
+		IOrbiter? target = null;
+		if (id.Length > 0)
+			target = Universe.CurrentSystem?.Get(id) as IOrbiter ?? throw new ArgumentException($"no orbiter '{id}'");
+		InputEvents.ChangeTargetBuffer.Add(new InputEvents.ChangeTargetData { Vehicle = v, Target = target });
+		return new { target = target?.Id };
 	}
 
 	public static object? SetCamera(string mode)
