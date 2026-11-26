@@ -94,6 +94,9 @@ public static class Hud
 		// Time at the top centre: T+, universal time, the warp control.
 		DrawTime(c, c.Size.X / 2, t);
 
+		// The autopilot at the top right.
+		Autopilot.Draw(c, c.Size.X - Margin, TimeTop - 6, vehicle);
+
 		var bars = new List<Bar> { ThrottleBar(t) };
 		foreach (var p in t.Propellants.Take(MaxPropellantBars))
 			bars.Add(new Bar(p.Name, $"{p.Fraction * 100:0}%", p.Fraction));
