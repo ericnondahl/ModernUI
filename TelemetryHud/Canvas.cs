@@ -41,6 +41,9 @@ public readonly struct Canvas
 	float Snap(float v) => MathF.Round(v * _pixelsPerPoint) / _pixelsPerPoint;
 
 	public float Px(float units) => units * _scale;
+
+	/// <summary>An ImGui length in design units.</summary>
+	public float Units(float imgui) => imgui / _scale;
 	public float2 Px(float2 units) => units * _scale;
 
 	// ---- shapes ----

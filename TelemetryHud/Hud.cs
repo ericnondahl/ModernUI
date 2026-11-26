@@ -94,8 +94,11 @@ public static class Hud
 		// Time at the top centre: T+, universal time, the warp control.
 		DrawTime(c, c.Size.X / 2, t);
 
-		// The autopilot at the top right.
-		Autopilot.Draw(c, c.Size.X - Margin, TimeTop - 6, vehicle);
+		// Staging at the top left, the autopilot at the top right, below the game's menu bar
+		// (a window above ours: it would take their clicks).
+		float panelsTop = c.Units(ImGui.GetFrameHeight()) + 24;
+		Staging.Draw(c, Margin, panelsTop, vehicle);
+		Autopilot.Draw(c, c.Size.X - Margin, panelsTop, vehicle);
 
 		var bars = new List<Bar> { ThrottleBar(t) };
 		foreach (var p in t.Propellants.Take(MaxPropellantBars))

@@ -15,6 +15,9 @@ public class Settings
 	/// <summary>Skip the game's own gauge panels while the HUD shows.</summary>
 	public bool HideStockGauges { get; set; } = true;
 
+	/// <summary>Whether the staging list is open (its header is always shown).</summary>
+	public bool StagingOpen { get; set; } = true;
+
 	/// <summary>Whether the autopilot panel is open (its header is always shown).</summary>
 	public bool AutopilotOpen { get; set; }
 

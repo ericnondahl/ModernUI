@@ -66,6 +66,7 @@ public static class Commands
 			inFlight = v != null && !Program.EditorFlag && !map,
 			simSpeed = Universe.GetSimulationSpeed(),
 			autoWarp = Universe.IsAutoWarpActive,
+			resourceGroupsOpen = ResourceGroupsPanel.IsOpen,
 			gameSeconds = Universe.GetElapsedSeconds(),
 			vehicle,
 		};
