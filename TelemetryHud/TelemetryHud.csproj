@@ -12,5 +12,10 @@
 		<Copyright>MIT</Copyright>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<!-- Barlow, SIL Open Font License 1.1 (Assets/Fonts/OFL.txt) -->
+		<None Include="Assets\Fonts\**" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
 	<Import Project="..\tooling\msbuild\KsaMod.targets" />
 </Project>

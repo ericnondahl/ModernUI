@@ -4,8 +4,10 @@ A Kitten Space Agency UI mod: flight telemetry as flat, black-and-white gauges i
 style of a launch webcast. Thin rings, big numbers, small caps labels. Nothing
 skeuomorphic.
 
-Status: scaffold. It has one speed ring and one altitude ring, drawn bottom-left. It
-builds, and StarMap loads it. See Dev loop for screenshots without clicking.
+Status: early. Speed and altitude rings in a shaded band at the bottom left, in Barlow,
+sized from the screen height. While the HUD shows, the game's own gauge panels hide;
+**Mods → Telemetry HUD** in the game's menu bar turns either off. See Dev loop for
+screenshots without clicking.
 
 ## How it works
 
@@ -18,6 +20,15 @@ builds, and StarMap loads it. See Dev loop for screenshots without clicking.
 - **Data:** `Telemetry.cs` is the only file that reads game state. Its calls are copied
   from [KSA-ReGUI](https://github.com/wide-frog/KSA-ReGUI)'s `FlightData.cs`, which has
   many more values (apoapsis, vertical speed, burn timing and so on).
+- **Layout:** `Canvas.cs` works in design units for a 1080-pixel-high screen and scales
+  with the real height. Text is measured and laid out a character at a time: tabular
+  digits (numbers don't jitter), tracking for small capitals, caps centred vertically.
+- **Stock gauges:** a Harmony prefix on `GaugeCanvas.OnDrawUi` skips their drawing while
+  the HUD shows. Their enabled flags and saved HUD layouts are untouched.
+- **Fonts:** Barlow (SIL OFL 1.1, `TelemetryHud/Assets/Fonts`), added to the game's font
+  manager after each font rebuild, since the game only scans its own `Content` folder.
+- **Settings:** `TelemetryHud/settings.json` in the profile folder (the Borea instance's,
+  or My Games/Kitten Space Agency), not the mod folder, which updates replace.
 - **Build:** [KSAModTools](https://github.com/AMPW-german/KSAModTools) (the `tooling/`
   submodule) resolves the game's DLLs, writes `mod.toml` and copies the build into the
   game's mods folder. `Directory.Build.props` points it at the Mac app.
@@ -55,6 +66,7 @@ scripts/dev.sh flight 12000 800           # the start rocket to 12 km, climbing 
 scripts/dev.sh flight 300000              # ...or into a 300 km orbit
 KSA_VEHICLE=Hunter scripts/dev.sh flight  # new game, the Hunter on the pad (KSA_SITE, default "CCSFS LC-39A")
 scripts/dev.sh shot hud                   # PNG of the next frame, UI included -> screenshots/hud-<time>.png
+scripts/dev.sh gallery v3                 # the same four states every time: orbit, 45 km, 12 km, pad
 scripts/dev.sh call status                # flight state, altitude, speed
 scripts/dev.sh call vehicles              # vehicles to launch (yours and the defaults)
 scripts/dev.sh console simspeed 10        # any game console command, with its log output

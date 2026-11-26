@@ -6,6 +6,7 @@
 #   scripts/dev.sh flight [alt] [v]   teleport the controlled vehicle to alt (m), climbing at v (m/s),
 #                                     or into orbit without v; KSA_VEHICLE=<save> starts it on a pad first
 #   scripts/dev.sh shot [name]        screenshot into screenshots/<name>-<time>.png, prints the path
+#   scripts/dev.sh gallery [name]     shots of fixed states: orbit, 45 km and 12 km climbing, on the pad
 #   scripts/dev.sh call <cmd> [--data-urlencode k=v]  any bridge command: status, vehicles, console, ...
 #   scripts/dev.sh console <line>     a game console command, e.g. "simspeed 10", "defaultvehiclesavefiles"
 #   scripts/dev.sh quit               quit the game
@@ -147,9 +148,18 @@ case "$cmd" in
     call screenshot --data-urlencode "path=$path" >/dev/null
     echo "$path"
     ;;
+  gallery)
+    # The same flight states every time, to compare before and after a change:
+    # screenshots/<name>-<state>-<time>.png. Run after restart (it starts in orbit).
+    name="${1:-gallery}"
+    "$0" flight 300000 >/dev/null && "$0" shot "$name-orbit"
+    "$0" flight 45000 1500 >/dev/null && "$0" shot "$name-45km"
+    "$0" flight 12000 800 >/dev/null && "$0" shot "$name-12km"
+    KSA_VEHICLE=Hunter "$0" flight >/dev/null && "$0" shot "$name-pad"
+    ;;
   call) call "$@" ;;
   console) call console --data-urlencode "cmd=$*" ;;
   quit) quit_game ;;
   window) quit_game; dev_window ;;
-  *) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

@@ -1,3 +1,4 @@
+using HarmonyLib;
 using KSA;
 using StarMap.API;
 
@@ -10,18 +11,42 @@ namespace TelemetryHud;
 [StarMapMod]
 public class TelemetryHud
 {
+	Harmony? _harmony;
+
+	[StarMapImmediateLoad]
+	public void ImmediateLoad(Mod mod)
+	{
+		Fonts.ModDirectory = mod.DirectoryPath;
+		Settings.Load();
+	}
+
+	[StarMapAllModsLoaded]
+	public void AllModsLoaded()
+	{
+		_harmony = new Harmony("TelemetryHud");
+		_harmony.PatchAll();
+		// If the game built its fonts before we patched its font manager, add ours now;
+		// later rebuilds go through the patch.
+		if (FontManager.Fonts.Count > 0)
+			Fonts.Load();
+	}
+
+	[StarMapUnload]
+	public void Unload() => _harmony?.UnpatchAll("TelemetryHud");
+
 	[StarMapAfterGui]
 	public void AfterGui(double dt)
 	{
-		// Only draw in flight view: not in the editor, not in map view.
+		// Only in flight view: not in the editor, not in map view.
 		Vehicle? vehicle = Program.ControlledVehicle;
 		bool inFlight = vehicle != null
 			&& !Program.EditorFlag
 			&& Program.GetController() != Program.GetMapController();
-		if (!inFlight)
+		if (!inFlight || !Settings.Current.Enabled)
+		{
+			Hud.Hide();
 			return;
-
-		Telemetry t = Telemetry.Read(vehicle!);
-		Hud.Draw(t);
+		}
+		Hud.Draw(Telemetry.Read(vehicle!));
 	}
 }
