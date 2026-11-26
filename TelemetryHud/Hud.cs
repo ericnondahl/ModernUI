@@ -174,6 +174,13 @@ public static class Hud
 			c.Text(Fonts.SemiBold, 30, new float2(x, centreY + 4), Align.Center, White, readouts[i].Value, tabular: true);
 		}
 
+		// On EVA the deck is the stock KittenFlightControl: control modes and trim.
+		if (v is KSA.KittenEva)
+		{
+			DrawEvaDeck(c, centreX, labelsY, v);
+			return;
+		}
+
 		// Buttons along the labels' line.
 		const float width = 100;
 		string[] labels = ["IGNITE", "SHUTDOWN", "STAGE", "RCS"];
@@ -196,6 +203,28 @@ public static class Hud
 			GameActions.ActivateNextStage(v);
 		if (Controls.Button(c, "RCS", "RCS", Min(3), Max(3), GameActions.IsOn(v, rcs), GameActions.IsDisabled(v, rcs)))
 			GameActions.Apply(v, rcs, toggle: true);
+		Controls.EndRegion();
+	}
+
+	static void DrawEvaDeck(Canvas c, float centreX, float labelsY, KSA.Vehicle v)
+	{
+		(string Label, KSA.KittenEvaAction Value)[] buttons =
+		[
+			("DIRECT", KSA.KittenEvaAction.DirectMode), ("VIEW", KSA.KittenEvaAction.ViewMode),
+			("RCS", KSA.KittenEvaAction.Rcs), ("MANUAL", KSA.KittenEvaAction.ManualTrim), ("RATE", KSA.KittenEvaAction.RateTrim),
+		];
+		const float width = 84;
+		float rowWidth = Controls.RowWidth(buttons.Length, width, ButtonGap);
+		float left = centreX - rowWidth / 2, top = labelsY - ButtonHeight / 2 - 4;
+		Controls.BeginRegion(c, "eva", new float2(left, top), new float2(left + rowWidth, top + ButtonHeight));
+		for (int i = 0; i < buttons.Length; i++)
+		{
+			var (label, value) = buttons[i];
+			var min = new float2(left + i * (width + ButtonGap), top);
+			if (Controls.Button(c, $"EVA {label}", label, min, min + new float2(width, ButtonHeight),
+					GameActions.IsOn(v, value), GameActions.IsDisabled(v, value)))
+				GameActions.Apply(v, value);
+		}
 		Controls.EndRegion();
 	}
 

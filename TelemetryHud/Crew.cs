@@ -1,6 +1,7 @@
 using Brutal.ImGuiApi;
 using Brutal.Numerics;
 using KSA;
+using Core;
 
 namespace TelemetryHud;
 
@@ -37,20 +38,26 @@ public static class Crew
 
 	public static float Draw(Canvas c, float left, float top, Vehicle v, UniverseTime now)
 	{
-		var kittens = new List<KittenRosterEntryData>();
+		var kittens = new List<(KittenRosterEntryData Kitten, IVASeat? Seat)>();
 		foreach (var seat in v.Crew)
 			if (seat.AssignedKittenHash != KeyHash.Zero && Universe.KittenRoster.Find(seat.AssignedKittenHash) is { } k)
-				kittens.Add(k);
+				kittens.Add((k, seat));
 		if (v is KittenEva eva && Universe.KittenRoster.Find(eva.Id) is { } self)
-			kittens.Add(self);
+			kittens.Add((self, null));
 
 		bool lifeSupport = Universe.Rules.LifeSupport;
 		var forecast = v.LifeSupportForecast;
 		int crew = Math.Min(kittens.Count, MaxCrew);
-		float facesHeight = crew > 0 ? FaceSize + 52 : 0;
+		float facesHeight = crew > 0 ? FaceSize + 52 + ButtonRow : 0;
+		var moving = kittens.FirstOrDefault(k => k.Seat != null && k.Kitten.NameHash == _moving);
+		var freeSeats = moving.Seat != null ? Vehicle.FindEmptySeatsInZone(v.Parts, moving.Seat) : [];
+		if (moving.Seat == null)
+			_moving = null;
+		float seatsHeight = moving.Seat != null ? ButtonRow + 22 : 0;
 		const float systemsHeight = 2 * 44;
-		float height = 28 + facesHeight + systemsHeight;
+		float height = 28 + facesHeight + seatsHeight + systemsHeight;
 		float right = left + Width;
+		Controls.BeginRegion(c, "crew", new float2(left, top), new float2(right, top + height));
 		c.FillRect(new float2(left - Pad, top - Pad), new float2(right + Pad, top + height + Pad), Backing, 6);
 
 		c.Text(Fonts.Medium, SmallSize + 1, new float2(left, top + 14), Align.Left, Dim, "CREW", tracking: 2.4f);
@@ -61,7 +68,7 @@ public static class Crew
 		bool worried = lifeSupport && forecast.Kittens > 0 && forecast.Level != LifeSupportLevel.Ok;
 		for (int i = 0; i < crew; i++)
 		{
-			var k = kittens[i];
+			var (k, seat) = kittens[i];
 			var face = k.Kia ? Face.Lost : k.HasRadiationSickness(now) || worried ? Face.Unwell : Face.Well;
 			float cx = left + Cell / 2 + i * Cell;
 			DrawCat(c, new float2(cx, y + FaceSize / 2 + 4), FaceSize, k.Name, face);
@@ -71,8 +78,44 @@ public static class Crew
 			c.Text(Fonts.SemiBold, SmallSize - 1, new float2(cx, y + FaceSize + 16), Align.Center, k.Kia ? Faint : White, name, tracking: 1.2f);
 			string doses = $"{k.GetAcuteDose(now).Value() * 1000:0.##} / {k.LifetimeDose.Value() * 1000:0.##} MSV";
 			c.Text(Fonts.Medium, SmallSize - 3, new float2(cx, y + FaceSize + 34), Align.Center, Dim, k.Kia ? "LOST" : doses, tracking: 0.8f, tabular: true);
+
+			// EVA and MOVE, as under the stock portraits.
+			if (seat != null)
+			{
+				float by = y + FaceSize + 48, bw = (Cell - 14) / 2;
+				var evaReady = v.CheckEva(k, seat) == EvaCheck.Ready;
+				if (Controls.Button(c, $"EVA {k.Name}", "EVA", new float2(cx - bw - 2, by), new float2(cx - 2, by + 22), disabled: !evaReady))
+					EVADoor.PerformEvaForSeat(v, seat);
+				bool canMove = Vehicle.FindEmptySeatsInZone(v.Parts, seat).Count > 0 && !k.Condition.IsIncapacitated(now);
+				if (Controls.Button(c, $"MOVE {k.Name}", "MOVE", new float2(cx + 2, by), new float2(cx + bw + 2, by + 22),
+						lit: _moving == k.NameHash, disabled: !canMove))
+					_moving = _moving == k.NameHash ? null : k.NameHash;
+			}
 		}
 		y += facesHeight;
+
+		// MOVE: the empty seats in the kitten's zone (the stock seat picker), and CANCEL.
+		if (moving.Seat != null)
+		{
+			c.Text(Fonts.Medium, SmallSize - 3, new float2(left, y + 8), Align.Left, Dim, $"MOVE {moving.Kitten.Name.ToUpperInvariant()} TO", tracking: 1.6f);
+			float sx = left, sy = y + 18;
+			Span<char> buffer = stackalloc char[64];
+			for (int i = 0; i < freeSeats.Count && i < 4; i++)
+			{
+				var sb = new SpanBuilder(buffer);
+				SeatPicker.AppendSeatName(v.Parts, freeSeats[i], ref sb);
+				string seatName = sb.Written.ToString().ToUpperInvariant();
+				if (Controls.Button(c, $"SEAT {i}", seatName, new float2(sx, sy), new float2(sx + 84, sy + 22)))
+				{
+					Vehicle.MoveCrew(v.Parts, moving.Kitten.NameHash, freeSeats[i]);
+					_moving = null;
+				}
+				sx += 88;
+			}
+			if (Controls.Button(c, "SEAT CANCEL", "CANCEL", new float2(right - 84, sy), new float2(right, sy + 22)))
+				_moving = null;
+			y += seatsHeight;
+		}
 
 		// Systems: power, life support, radiation.
 		var systems = new List<(string Label, string Value, bool Alert)> { ("POWER", Power(v), false) };
@@ -101,8 +144,14 @@ public static class Crew
 				c.FillRect(new float2(x - 4, ry + 20), new float2(x + colWidth - 12, ry + 40), new ImColor8(255, 255, 255, 230), 3);
 			c.Text(Fonts.SemiBold, SmallSize + 2, new float2(x, ry + 30), Align.Left, alert ? new ImColor8(0, 0, 0, 255) : White, value, tabular: true, shadow: !alert);
 		}
+		Controls.EndRegion();
 		return top + height + 2 * Pad + 8;
 	}
+
+	const float ButtonRow = 28;
+
+	/// <summary>The kitten whose seat picker is open (MOVE).</summary>
+	static KeyHash? _moving;
 
 	// ---- the cats ---------------------------------------------------------------------------
 
