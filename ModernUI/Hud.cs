@@ -1,7 +1,7 @@
 using Brutal.ImGuiApi;
 using Brutal.Numerics;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>A ring gauge: a number in a thin open ring, filled to Fraction (0..1).</summary>
 public readonly record struct Ring(string Label, string Value, string Unit, double Fraction);

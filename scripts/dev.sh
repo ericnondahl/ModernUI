@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Dev loop for TelemetryHud: rebuild, restart the game in the Borea test instance, set up a
+# Dev loop for ModernUI: rebuild, restart the game in the Borea test instance, set up a
 # flight and take screenshots, through the DevBridge mod's HTTP server.
 #
 #   scripts/dev.sh restart            quit the game, build both mods, start the game, wait for the bridge
@@ -113,12 +113,12 @@ case "$cmd" in
     quit_game
     dev_window
     # A failed build stops here: starting the game would test the previous build.
-    if ! out=$(cd "$REPO" && dotnet build TelemetryHud.slnx -c Release -v quiet -nologo 2>&1); then
+    if ! out=$(cd "$REPO" && dotnet build ModernUI.slnx -c Release -v quiet -nologo 2>&1); then
       echo "$out" | grep -E "error" | sed 's| \[.*||' | sort -u >&2
       die "build failed; the game was not started"
     fi
     echo "$out" | grep -E "warning CS" | sed 's| \[.*||' | sort -u || true
-    "$BOREA" enable TelemetryHud >/dev/null 2>&1 || true
+    "$BOREA" enable ModernUI >/dev/null 2>&1 || true
     "$BOREA" enable DevBridge >/dev/null 2>&1 || true
     # Borea can take a moment to notice the old game is gone; retry the launch.
     for try in 1 2 3 4 5; do

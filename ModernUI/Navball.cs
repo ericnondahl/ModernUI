@@ -2,7 +2,7 @@ using Brutal.ImGuiApi;
 using Brutal.Numerics;
 using KSA;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>What the navball shows, copied from the game's own navball data each frame.</summary>
 public readonly record struct NavballState(

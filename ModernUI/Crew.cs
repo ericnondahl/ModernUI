@@ -3,7 +3,7 @@ using Brutal.Numerics;
 using KSA;
 using Core;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>
 /// The stock CrewPortraits, Radiation and Resources (power, life support) gauges as one

@@ -3,14 +3,14 @@ using HarmonyLib;
 using KSA;
 using StarMap.API;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>
 /// Entry point. StarMap finds this class by its [StarMapMod] attribute and calls the
 /// attributed methods at each stage of the game's life.
 /// </summary>
 [StarMapMod]
-public class TelemetryHud
+public class ModernUIMod
 {
 	Harmony? _harmony;
 
@@ -24,7 +24,7 @@ public class TelemetryHud
 	[StarMapAllModsLoaded]
 	public void AllModsLoaded()
 	{
-		_harmony = new Harmony("TelemetryHud");
+		_harmony = new Harmony("ModernUI");
 		_harmony.PatchAll();
 		// If the game built its fonts before we patched its font manager, add ours now;
 		// later rebuilds go through the patch.
@@ -33,7 +33,7 @@ public class TelemetryHud
 	}
 
 	[StarMapUnload]
-	public void Unload() => _harmony?.UnpatchAll("TelemetryHud");
+	public void Unload() => _harmony?.UnpatchAll("ModernUI");
 
 	[StarMapAfterGui]
 	public void AfterGui(double dt)

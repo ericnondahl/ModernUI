@@ -2,7 +2,7 @@ using Brutal.ImGuiApi;
 using Brutal.Numerics;
 using KSA;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>
 /// The stock AutopilotSettings panel, in the HUD's style, at the top right: one line with

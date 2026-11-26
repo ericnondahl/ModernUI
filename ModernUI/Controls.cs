@@ -1,7 +1,7 @@
 using Brutal.ImGuiApi;
 using Brutal.Numerics;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>
 /// Clickable controls in the HUD's style. The HUD draws on ImGui's foreground list, which
@@ -39,7 +39,7 @@ public static class Controls
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new float2(0, 0));
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, new float2(1, 1));
-		ImGui.Begin($"##TelemetryHud.{id}", RegionFlags);
+		ImGui.Begin($"##ModernUI.{id}", RegionFlags);
 		ImGui.PopStyleVar(3);
 	}
 

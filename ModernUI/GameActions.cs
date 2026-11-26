@@ -1,7 +1,7 @@
 using Brutal.GlfwApi;
 using KSA;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>
 /// What the HUD's controls do, through the same paths as the game's own buttons and keys,

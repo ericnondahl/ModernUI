@@ -26,8 +26,8 @@ public static class Commands
 			["/fly?alt=<m>&speed=<m/s>"] = "teleport the controlled vehicle onto a vertical climb through that altitude; without speed, a circular orbit",
 			["/console?cmd=<line>"] = "run a game console command (simspeed, refill, loadvehicle, control, exit, ...) and return its output",
 			["/set?enum=<KSA enum>&value=<name>"] = "a flight computer setting as the stock buttons set it, e.g. enum=FlightComputerAttitudeTrackTarget&value=Prograde, enum=VehicleEngine&value=MainIgnite",
-			["/buttons"] = "TelemetryHud's buttons by id",
-			["/click?button=<id>"] = "click a TelemetryHud button through ImGui's input, as the mouse would",
+			["/buttons"] = "ModernUI's buttons by id",
+			["/click?button=<id>"] = "click a ModernUI button through ImGui's input, as the mouse would",
 			["/burn?dv=<m/s>"] = "a prograde burn at the next apoapsis, selected for editing",
 			["/target?id=<vehicle or body>"] = "set the controlled vehicle's target (empty id clears it)",
 			["/key?name=<ImGuiKey>"] = "press and release a key through ImGui (P cycles the HUD's modes)",
@@ -280,14 +280,14 @@ public static class Commands
 
 	// ---- clicking HUD buttons -----------------------------------------------------------
 
-	// TelemetryHud records each button's rectangle by id every frame (Controls.Rects).
+	// ModernUI records each button's rectangle by id every frame (Controls.Rects).
 	static Dictionary<string, (float2 Min, float2 Max)> HudButtons()
 	{
 		var type = AppDomain.CurrentDomain.GetAssemblies()
-			.Select(a => a.GetType("TelemetryHud.Controls")).FirstOrDefault(t => t != null)
-			?? throw new InvalidOperationException("TelemetryHud isn't loaded");
+			.Select(a => a.GetType("ModernUI.Controls")).FirstOrDefault(t => t != null)
+			?? throw new InvalidOperationException("ModernUI isn't loaded");
 		return type.GetField("Rects", BindingFlags.Public | BindingFlags.Static)?.GetValue(null) as Dictionary<string, (float2 Min, float2 Max)>
-			?? throw new MissingMemberException("TelemetryHud.Controls.Rects");
+			?? throw new MissingMemberException("ModernUI.Controls.Rects");
 	}
 
 	public static async Task<object?> MouseProbe(float x, float y)

@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using Brutal.ImGuiApi;
 using Brutal.Numerics;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 public enum Align { Left, Center, Right }
 

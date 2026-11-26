@@ -2,7 +2,7 @@ using Brutal.ImGuiApi;
 using HarmonyLib;
 using KSA;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>
 /// While the HUD shows, the game's gauge panels skip drawing. This only skips the draw
@@ -28,17 +28,17 @@ static class ModsMenu
 			return;
 		var s = Settings.Current;
 		bool enabled = s.Enabled, hide = s.HideStockGauges;
-		if (ImGui.MenuItem("Telemetry HUD", default, ref enabled))
+		if (ImGui.MenuItem("ModernUI", default, ref enabled))
 		{
 			s.Enabled = enabled;
 			s.Save();
 		}
-		if (ImGui.MenuItem("Telemetry HUD: hide stock gauges", default, ref hide))
+		if (ImGui.MenuItem("ModernUI: hide stock gauges", default, ref hide))
 		{
 			s.HideStockGauges = hide;
 			s.Save();
 		}
-		if (ImGui.BeginMenu("Telemetry HUD mode"))
+		if (ImGui.BeginMenu("ModernUI mode"))
 		{
 			foreach (var (label, mode) in ((string, HudMode)[])[("Clean", HudMode.Clean), ("Flight", HudMode.Flight), ("Full", HudMode.Full)])
 				if (ImGui.MenuItem(label, "P", s.Mode == mode))
@@ -76,7 +76,7 @@ public static class Fonts
 			var path = Path.Combine(ModDirectory, "Assets", "Fonts", name + ".ttf");
 			if (!File.Exists(path))
 			{
-				Console.WriteLine($"TelemetryHud: missing font {path}");
+				Console.WriteLine($"ModernUI: missing font {path}");
 				continue;
 			}
 			FontManager.Fonts[name] = FontManager.LoadFont(path, ImGui.GetIO().Fonts, GameSettings.GetFontSize(),

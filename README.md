@@ -1,4 +1,4 @@
-# TelemetryHud
+# ModernUI
 
 A Kitten Space Agency UI mod: flight telemetry as flat, black-and-white gauges in the
 style of a launch webcast. Thin rings, big numbers, small caps labels. Nothing
@@ -6,10 +6,10 @@ skeuomorphic.
 
 Status: feature parity with the stock flight HUD, in a launch-webcast style (flat, black
 and white, Barlow). While the HUD shows (flight and map view), the game's own gauge
-panels hide; **Mods → Telemetry HUD** in the game's menu bar turns either off. F2 (the
+panels hide; **Mods → ModernUI** in the game's menu bar turns either off. F2 (the
 game's hide-UI key) hides it too.
 
-**Modes** (the **P** key cycles them; also **Mods → Telemetry HUD mode**):
+**Modes** (the **P** key cycles them; also **Mods → ModernUI mode**):
 
 - **CLEAN**: the webcast look. Speed and altitude rings, navball, throttle and propellant
   bars, T+. No controls.
@@ -48,9 +48,9 @@ Vehicle.SetEnum), and is lit and greyed by the same checks.
   digits (numbers don't jitter), tracking for small capitals, caps centred vertically.
 - **Stock gauges:** a Harmony prefix on `GaugeCanvas.OnDrawUi` skips their drawing while
   the HUD shows. Their enabled flags and saved HUD layouts are untouched.
-- **Fonts:** Barlow (SIL OFL 1.1, `TelemetryHud/Assets/Fonts`), added to the game's font
+- **Fonts:** Barlow (SIL OFL 1.1, `ModernUI/Assets/Fonts`), added to the game's font
   manager after each font rebuild, since the game only scans its own `Content` folder.
-- **Settings:** `TelemetryHud/settings.json` in the profile folder (the Borea instance's,
+- **Settings:** `ModernUI/settings.json` in the profile folder (the Borea instance's,
   or My Games/Kitten Space Agency), not the mod folder, which updates replace.
 - **Build:** [KSAModTools](https://github.com/AMPW-german/KSAModTools) (the `tooling/`
   submodule) resolves the game's DLLs, writes `mod.toml` and copies the build into the
@@ -69,12 +69,12 @@ Vehicle.SetEnum), and is lit and greyed by the same checks.
    `.../Borea/Loaders/StarMap/`). The file is gitignored.
 4. Build: `dotnet build -c Release`. The build copies the mod into the instance's `mods`
    folder.
-5. The first time only, enable it: `/Applications/Borea.app/Contents/MacOS/borea enable TelemetryHud`.
+5. The first time only, enable it: `/Applications/Borea.app/Contents/MacOS/borea enable ModernUI`.
 6. Run it: `/Applications/Borea.app/Contents/MacOS/borea launch <instance name>`, or
    press Play in Borea. Starting the app directly skips StarMap.
 
 Each start's log is in the instance's `logs/console.log`. Look for
-`Loaded mod: TelemetryHud`. Quit the game before rebuilding, because the game keeps
+`Loaded mod: ModernUI`. Quit the game before rebuilding, because the game keeps
 the DLL loaded.
 
 ## Dev loop (DevBridge)
@@ -119,7 +119,7 @@ scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget 
   or a sleeping display**. `restart` keeps the display awake while the game runs.
 
 **Navball test:** set `"DebugNavballTumble": true` in the profile's
-`TelemetryHud/settings.json` and restart: the navball turns through every orientation
+`ModernUI/settings.json` and restart: the navball turns through every orientation
 over time, so `scripts/burst.sh` covers hundreds of attitudes in a few seconds.
 
 ## References

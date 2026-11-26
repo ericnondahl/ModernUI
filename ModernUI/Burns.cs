@@ -2,7 +2,7 @@ using Brutal.ImGuiApi;
 using Brutal.Numerics;
 using KSA;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>
 /// The stock BurnControl and Burn (editor) gauges in the HUD's style.

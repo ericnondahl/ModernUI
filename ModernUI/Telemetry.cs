@@ -1,7 +1,7 @@
 using Brutal.Numerics;
 using KSA;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>One propellant, summed over every tank on the vehicle.</summary>
 public readonly record struct Propellant(string Name, float Mass, float Fraction);

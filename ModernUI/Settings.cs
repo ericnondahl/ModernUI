@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>How much of the HUD shows.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<HudMode>))]
@@ -16,7 +16,7 @@ public enum HudMode
 }
 
 /// <summary>
-/// The player's choices, in TelemetryHud/settings.json in the game's profile folder
+/// The player's choices, in ModernUI/settings.json in the game's profile folder
 /// (Constants.DocumentsFolderPath: the Borea instance's folder, or My Games/Kitten Space
 /// Agency). Not in the mod's own folder: updating or rebuilding the mod replaces it.
 /// </summary>
@@ -53,7 +53,7 @@ public class Settings
 
 	public static void Load()
 	{
-		_path = Path.Combine(KSA.Constants.DocumentsFolderPath, "TelemetryHud", "settings.json");
+		_path = Path.Combine(KSA.Constants.DocumentsFolderPath, "ModernUI", "settings.json");
 		try
 		{
 			if (File.Exists(_path))
@@ -61,7 +61,7 @@ public class Settings
 		}
 		catch (Exception e)
 		{
-			Console.WriteLine($"TelemetryHud: settings.json unreadable, using defaults ({e.Message})");
+			Console.WriteLine($"ModernUI: settings.json unreadable, using defaults ({e.Message})");
 			Current = new();
 		}
 	}
@@ -75,6 +75,6 @@ public class Settings
 			Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
 			File.WriteAllText(_path, JsonSerializer.Serialize(this, Json));
 		}
-		catch (Exception e) { Console.WriteLine($"TelemetryHud: could not save settings ({e.Message})"); }
+		catch (Exception e) { Console.WriteLine($"ModernUI: could not save settings ({e.Message})"); }
 	}
 }

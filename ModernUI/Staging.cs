@@ -2,7 +2,7 @@ using Brutal.ImGuiApi;
 using Brutal.Numerics;
 using KSA;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>
 /// The stock Sequence panel, in the HUD's style, at the top left: the vehicle's stages (the

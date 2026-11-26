@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="TelemetryHud/TelemetryHud.csproj" />
+  <Project Path="ModernUI/ModernUI.csproj" />
   <Project Path="DevBridge/DevBridge.csproj" />
 </Solution>

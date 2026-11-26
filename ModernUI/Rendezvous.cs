@@ -2,7 +2,7 @@ using Brutal.ImGuiApi;
 using Brutal.Numerics;
 using KSA;
 
-namespace TelemetryHud;
+namespace ModernUI;
 
 /// <summary>
 /// The stock RendezvousControl gauge in the HUD's style, whenever a target is set: the
