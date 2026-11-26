@@ -9,7 +9,11 @@ public readonly record struct NavballState(
 	VehicleReferenceFrame Frame,
 	/// <summary>The navball's frame to the vehicle's helm frame (Vehicle.NavBallData.Navball2Helm).</summary>
 	doubleQuat Navball2Helm,
-	double3? Velocity, double3? Normal, double3? RadialOut, double3? Target, double3? Burn)
+	double3? Velocity, double3? Normal, double3? RadialOut, double3? Target, double3? Burn,
+	/// <summary>Turn rates in the frame, degrees a second: roll (X), pitch (Y), yaw (Z), as the stock navball's rate digits.</summary>
+	double3 RatesDeg,
+	/// <summary>Speed in the frame, as the stock attitude gauge's velocity.</summary>
+	double FrameSpeed)
 {
 	public static NavballState Read(Vehicle vehicle)
 	{
@@ -22,7 +26,9 @@ public readonly record struct NavballState(
 			m.NormalValid ? m.NormalDirHelm : null,
 			m.RadialValid ? m.RadialOutDirHelm : null,
 			m.TargetValid ? m.TargetDirHelm : null,
-			m.BurnValid ? m.BurnDirHelm : null);
+			m.BurnValid ? m.BurnDirHelm : null,
+			ball.AttitudeRates * (180.0 / Math.PI),
+			ball.Speed);
 	}
 }
 

@@ -4,22 +4,23 @@ A Kitten Space Agency UI mod: flight telemetry as flat, black-and-white gauges i
 style of a launch webcast. Thin rings, big numbers, small caps labels. Nothing
 skeuomorphic.
 
-Status: early. A shaded band along the bottom of the screen in flight:
+Status: feature parity with the stock flight HUD, in a launch-webcast style (flat, black
+and white, Barlow). While the HUD shows (flight and map view), the game's own gauge
+panels hide; **Mods → Telemetry HUD** in the game's menu bar turns either off.
 
-- **Rings** (left): speed, filling towards circular orbital speed at the current height;
-  altitude, filling towards the top of the atmosphere, then against round heights above.
-- **Navball** (centre): a line-drawn sphere in the HUD's style: far side hidden, ground
-  half a flat dark fill bounded by the curved horizon, grid fading towards the edge, flat
-  glyphs for prograde/retrograde, normal/antinormal, radial out/in, target and burn, all
-  from the game's own navball data. Under it: frame, heading, pitch and roll.
-- **T+ clock** (between the rings and the navball): from liftoff (the vehicle losing ground contact); a vehicle that
-  never touched the ground counts from when it was made. Held at 00:00:00 on the pad.
-- **Bars** (right): throttle (OFF while no engine burns) and each propellant's fill,
-  summed over the vehicle's tanks as the game's Resources panel does.
+| Where | What | Stock gauge it replaces |
+|---|---|---|
+| Bottom left | Speed and altitude rings (speed fills towards orbit; altitude towards the atmosphere's top, then round heights); apoapsis / periapsis with time to each and WARP-to | Altitude, Telemetry |
+| Bottom centre | Navball: a line-drawn sphere with every marker, heading / pitch / roll and their rates, speed in its frame, frame selector (STAR SURF ORBT OVEL TGT BURN) | Navball, PitchYawRoll |
+| Bottom right | Delta-v, TWR, next stage; IGNITE SHUTDOWN STAGE RCS (on EVA: DIRECT VIEW RCS MANUAL RATE); throttle and propellant bars | EngineControl, KittenFlightControl, Resources |
+| Top centre | T+ (from liftoff), universal time, vehicle; warp slower / real time / faster | GameTime |
+| Top left | Staging: per stage delta-v, TWR, Isp, burn time, ATM/VAC; total; RESOURCES | Sequence |
+| Top left | Crew as wireframe cats (blinking, squinting when unwell, crossed out when lost), doses, EVA and MOVE; power, life support, dose rate here and over the orbit | CrewPortraits, Radiation, Resources |
+| Top right | Autopilot: every mode, hold, target, thrust mode, profile, roll | AutopilotSettings |
+| Top right, when they apply | Next burn (AUTO WARP DELETE POS NEG HOLD); target (distance, speed, closest approach; TOWARD ANTI-VEL AWAY ALIGN HOLD CLEAR); in map view the burn editor (prograde / normal / radial, time, orbits, step, dose after) | BurnControl, RendezvousControl, Burn |
 
-While the HUD shows, the game's own gauge panels hide and its console messages fade in
-above the band; **Mods → Telemetry HUD** in the game's menu bar turns either off. Gauges are
-data (`Ring`, `Bar` in `Hud.cs`), so a new one is a list entry.
+Every control goes through the same game paths as the stock button (input buffers,
+Vehicle.SetEnum), and is lit and greyed by the same checks.
 
 ## How it works
 

@@ -102,7 +102,7 @@ public static class Burns
 			return;
 		var fc = b.Vehicle.FlightComputer;
 		float left = right - Width;
-		const int rows = 6;
+		const int rows = 7;
 		float height = RowHeight + 8 + rows * (RowHeight + Gap) + 4 + RowHeight;
 		Controls.BeginRegion(c, "burneditor", new float2(left, top), new float2(right, top + height));
 		c.FillRect(new float2(left - Pad, top - Pad), new float2(right + Pad, top + height + Pad), Backing, 6);
@@ -124,6 +124,12 @@ public static class Burns
 		Row(c, left, ref y, "TIME", Countdown(time.Seconds() - now), Edit.TimeMinus, Edit.TimePlus, b, fc, multiplier);
 		Row(c, left, ref y, "ORBITS", b.HasPeriod ? Duration(b.Patch.Orbit.Period) : "—", Edit.PeriodMinus, Edit.PeriodPlus, b, fc, multiplier, disabled: !b.HasPeriod);
 		Row(c, left, ref y, "STEP", $"{Burn.Multiplier:0.#}", Edit.StepMinus, Edit.StepPlus, b, fc, multiplier);
+
+		// The orbit after the burn: its averaged dose rate, as the stock editor shows it.
+		c.Text(Fonts.Medium, SmallSize - 2, new float2(left, y + RowHeight / 2), Align.Left, Dim, "DOSE AFTER", tracking: 2f);
+		c.Text(Fonts.SemiBold, SmallSize + 1, new float2(left + Width - 2 * 44 - 12, y + RowHeight / 2), Align.Right, White, PostBurnDose(b), tabular: true);
+		c.Text(Fonts.Medium, SmallSize - 4, new float2(left + Width - 2 * 44, y + RowHeight / 2 + 1), Align.Left, Dim, "MSV/H", tracking: 1f);
+		y += RowHeight + Gap;
 
 		// DELETE TRANSFER CLOSE
 		y += 4;
@@ -210,6 +216,21 @@ public static class Burns
 		double magnitude = Math.Pow(10.0, Math.Floor(Math.Log10(v) + 1E-09));
 		double digit = sign > 0 ? Math.Floor(v / magnitude + 1E-09) + 1.0 : Math.Ceiling(v / magnitude - 1E-09) - 1.0;
 		return digit <= 0.0 ? Math.Max(magnitude * 0.9, 0.1) : Math.Max(Math.Round(digit * magnitude, 10), 0.1);
+	}
+
+	static readonly OrbitDoseAverageCache PostBurnDoseCache = new();
+
+	// As Program.UpdateBurnEditorGauges: the orbit after the burn, its dose averaged over it.
+	static string PostBurnDose(Burn b)
+	{
+		var patch = b.GetPostBurnPatch();
+		if (patch == null)
+			return "—";
+		var dose = Radiation.ComputeOrbitDoseRates(patch.Orbit, patch.Orbit.Parent.GetPositionEcl(), PostBurnDoseCache);
+		if (dose.Status != OrbitDoseStatus.Averaged)
+			return "—";
+		double mSvPerHour = dose.Rates.Total.Value() * 3.6e6;
+		return mSvPerHour < 10 ? $"{mSvPerHour:0.00}" : $"{mSvPerHour:N0}";
 	}
 
 	// ---- formatting ------------------------------------------------------------------------

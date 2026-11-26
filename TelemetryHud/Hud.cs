@@ -356,17 +356,29 @@ public static class Hud
 		_ => $"{speed / 1_000_000:0}M",
 	};
 
-	// Heading above the ball, pitch left of it, roll right of it, like an instrument's scales.
+	// Heading above the ball, pitch left of it, roll right of it, like an instrument's
+	// scales, each with its rate of turn; the speed in the ball's frame under the pitch.
 	static void DrawAttitude(Canvas c, float2 ball, NavballState s)
 	{
 		var (heading, pitch, roll) = Navball.Attitude(s);
 		float r = NavballRadius;
+		var rates = s.RatesDeg;
 		c.Text(Fonts.SemiBold, SmallSize, ball + new float2(0, -r - 14), Align.Center, White, $"{heading:000}", tabular: true);
-		c.Text(Fonts.Medium, SmallSize - 3, ball + new float2(-r - 12, -11), Align.Right, Dim, "PITCH", tracking: 1.4f);
-		c.Text(Fonts.SemiBold, SmallSize, ball + new float2(-r - 12, 9), Align.Right, White, $"{pitch:0}", tabular: true);
-		c.Text(Fonts.Medium, SmallSize - 3, ball + new float2(r + 12, -11), Align.Left, Dim, "ROLL", tracking: 1.4f);
-		c.Text(Fonts.SemiBold, SmallSize, ball + new float2(r + 12, 9), Align.Left, White, $"{roll:0}", tabular: true);
+		c.Text(Fonts.Medium, SmallSize - 4, ball + new float2(34, -r - 14), Align.Left, Dim, Rate(rates.Z), tabular: true);
+
+		c.Text(Fonts.Medium, SmallSize - 3, ball + new float2(-r - 12, -30), Align.Right, Dim, "PITCH", tracking: 1.4f);
+		c.Text(Fonts.SemiBold, SmallSize, ball + new float2(-r - 12, -10), Align.Right, White, $"{pitch:0}", tabular: true);
+		c.Text(Fonts.Medium, SmallSize - 4, ball + new float2(-r - 12, 8), Align.Right, Dim, Rate(rates.Y), tabular: true);
+		c.Text(Fonts.Medium, SmallSize - 3, ball + new float2(-r - 12, 34), Align.Right, Dim, $"{Autopilot.FrameName(s.Frame)} M/S", tracking: 1.4f);
+		c.Text(Fonts.SemiBold, SmallSize, ball + new float2(-r - 12, 54), Align.Right, White, s.FrameSpeed < 100 ? $"{s.FrameSpeed:N1}" : $"{s.FrameSpeed:N0}", tabular: true);
+
+		c.Text(Fonts.Medium, SmallSize - 3, ball + new float2(r + 12, -30), Align.Left, Dim, "ROLL", tracking: 1.4f);
+		c.Text(Fonts.SemiBold, SmallSize, ball + new float2(r + 12, -10), Align.Left, White, $"{roll:0}", tabular: true);
+		c.Text(Fonts.Medium, SmallSize - 4, ball + new float2(r + 12, 8), Align.Left, Dim, Rate(rates.X), tabular: true);
 	}
+
+	// A turn rate: "+0.4°/S"; blank when still.
+	static string Rate(double degPerSecond) => Math.Abs(degPerSecond) < 0.05 ? "0.0°/S" : $"{degPerSecond:+0.0;-0.0}°/S";
 
 	// The navball's reference frame, as the stock navball's buttons: STAR SURF ORBT OVEL TGT
 	// BURN, the current one lit; TGT needs a target and BURN a planned burn.
