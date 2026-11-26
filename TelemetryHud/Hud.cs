@@ -31,6 +31,7 @@ public static class Hud
 	static readonly ImColor8 Faint = new(255, 255, 255, 102);  // 40%
 	static readonly ImColor8 Clear = new(0, 0, 0, 0);
 	static readonly ImColor8 Shade = new(0, 0, 0, 178);        // 70% black at the bottom edge
+	static readonly ImColor8 ShadeTop = new(0, 0, 0, 140);     // behind the time, at the top edge
 
 	// Layout, in design units.
 	const float Margin = 56;        // from the screen's edges
@@ -55,10 +56,17 @@ public static class Hud
 
 	public static void Hide() => Showing = false;
 
-	public static void Draw(Telemetry t)
+	// Orbit block (apoapsis and periapsis) and the engine deck, between the rings, the
+	// navball and the bars.
+	const float OrbitWidth = 180;
+	const float ButtonHeight = 30;
+	const float ButtonGap = 8;
+
+	public static void Draw(Telemetry t, KSA.Vehicle vehicle)
 	{
 		Showing = true;
 		var c = Canvas.ForScreen();
+		Controls.BeginFrame();
 		c.VerticalGradient(c.Size.Y - Band, c.Size.Y, Clear, Shade);
 
 		// Everything lines up on two rows: the rings' centre line and the labels' line.
@@ -68,17 +76,23 @@ public static class Hud
 		Ring[] rings = [SpeedRing(t), AltitudeRing(t)];
 		for (int i = 0; i < rings.Length; i++)
 			DrawRing(c, new float2(Margin + Radius + i * (2 * Radius + RingGap), centreY), labelsY, rings[i]);
+		float ringsRight = Margin + rings.Length * 2 * Radius + (rings.Length - 1) * RingGap;
+
+		// Apoapsis and periapsis right of the rings.
+		float orbitLeft = ringsRight + 36;
+		DrawOrbit(c, orbitLeft, centreY, labelsY, t, vehicle);
 
 		// The navball in the centre, its bottom on the same line as the rings' bottoms.
 		float ballY = centreY + Radius - NavballRadius;
 		var ball = Settings.Current.DebugNavballTumble ? Navball.Tumble(t.Navball) : t.Navball;
 		Navball.Draw(c, new float2(c.Size.X / 2, ballY), NavballRadius, ball);
-		DrawAttitude(c, new float2(c.Size.X / 2, labelsY), ball);
+		DrawAttitude(c, new float2(c.Size.X / 2, ballY), ball);
+		DrawFrames(c, c.Size.X / 2, labelsY, t, vehicle);
 
-		// The clock between the rings and the navball.
-		float ringsRight = Margin + rings.Length * 2 * Radius + (rings.Length - 1) * RingGap;
-		float ballLeft = c.Size.X / 2 - NavballRadius;
-		DrawClock(c, new float2((ringsRight + ballLeft) / 2, centreY), labelsY, t);
+		float ballRight = c.Size.X / 2 + NavballRadius;
+
+		// Time at the top centre: T+, universal time, the warp control.
+		DrawTime(c, c.Size.X / 2, t);
 
 		var bars = new List<Bar> { ThrottleBar(t) };
 		foreach (var p in t.Propellants.Take(MaxPropellantBars))
@@ -87,10 +101,105 @@ public static class Hud
 		for (int i = 0; i < bars.Count; i++)
 			DrawBar(c, right, labelsY - (bars.Count - 1 - i) * BarRowGap, bars[i]);
 
+		// The engine deck between the navball and the bars.
+		DrawEngine(c, (ballRight + right - BarWidth) / 2, centreY, labelsY, t, vehicle);
+
+		Controls.EndFrame();
+
 		// The strip the band's items take, from the tallest (rings or the bar stack) down,
 		// with a little air: the game's console messages fade in above it.
 		float barsTop = labelsY - (bars.Count - 1) * BarRowGap - 16 - SmallSize;
 		ReservedPixels = c.Px(c.Size.Y - Math.Min(Math.Min(centreY - Radius, ballY - NavballRadius), barsTop) + 20);
+	}
+
+	// ---- the orbit block: apoapsis and periapsis, time to each, warp to each ---------------
+
+	static void DrawOrbit(Canvas c, float left, float centreY, float labelsY, Telemetry t, KSA.Vehicle v)
+	{
+		Controls.BeginRegion(c, "orbit", new float2(left, centreY - Radius), new float2(left + OrbitWidth, labelsY + SmallSize));
+		OrbitRow(c, left, centreY - 40, "AP", t.Apoapsis, t.NextApoapsis, t, v);
+		OrbitRow(c, left, centreY + 22, "PE", t.Periapsis, t.NextPeriapsis, t, v);
+		Controls.EndRegion();
+		c.Text(Fonts.Medium, SmallSize, new float2(left + OrbitWidth / 2, labelsY), Align.Center, Dim, "ORBIT", tracking: Tracking);
+	}
+
+	// "AP" over the height; under them the time to it and a WARP button.
+	static void OrbitRow(Canvas c, float left, float y, string label, double? height, KSA.UniverseTime at, Telemetry t, KSA.Vehicle v)
+	{
+		c.Text(Fonts.Medium, SmallSize, new float2(left, y), Align.Left, Dim, label, tracking: Tracking);
+		var (value, unit) = height is { } h ? SplitDistance(h) : ("—", "");
+		float valueWidth = c.MeasureText(Fonts.SemiBold, 26, value, tabular: true);
+		c.Text(Fonts.SemiBold, 26, new float2(left + 38, y), Align.Left, height != null ? White : Faint, value, tabular: true);
+		c.Text(Fonts.Medium, SmallSize - 2, new float2(left + 44 + valueWidth, y + 3), Align.Left, Dim, unit, tracking: 1.2f);
+
+		double seconds = at.Seconds() - t.Now.Seconds();
+		bool exists = height != null && double.IsFinite(seconds) && seconds >= 0;
+		c.Text(Fonts.Medium, SmallSize - 2, new float2(left + 38, y + 24), Align.Left, exists ? Dim : Faint,
+			exists ? $"T- {FormatDuration(seconds)}" : "", tracking: 1, tabular: true);
+		bool can = exists && GameActions.CanWarpTo(v, at);
+		if (Controls.Button(c, $"WARP {label}", "WARP", new float2(left + OrbitWidth - 56, y + 13), new float2(left + OrbitWidth, y + 35),
+				lit: GameActions.IsWarpingTo(at), disabled: !can))
+			GameActions.ToggleWarpTo(at);
+	}
+
+	// ---- the engine deck: delta-v, TWR, next stage; ignite, shutdown, stage, RCS ----------
+
+	static void DrawEngine(Canvas c, float centreX, float centreY, float labelsY, Telemetry t, KSA.Vehicle v)
+	{
+		// Readouts: three columns.
+		(string Label, string Value)[] readouts =
+		[
+			("DELTA-V  M/S", t.TotalDeltaV > 0 ? $"{t.TotalDeltaV:N0}" : "—"),
+			("TWR", t.ThrustToWeight > 0 ? $"{t.ThrustToWeight:0.0}" : "—"),
+			("STAGE", t.NextStage >= 0 ? $"{t.NextStage}" : "—"),
+		];
+		const float column = 120;
+		for (int i = 0; i < readouts.Length; i++)
+		{
+			float x = centreX + (i - 1) * column;
+			c.Text(Fonts.Medium, SmallSize, new float2(x, centreY - 34), Align.Center, Dim, readouts[i].Label, tracking: Tracking);
+			c.Text(Fonts.SemiBold, 30, new float2(x, centreY + 4), Align.Center, White, readouts[i].Value, tabular: true);
+		}
+
+		// Buttons along the labels' line.
+		const float width = 100;
+		string[] labels = ["IGNITE", "SHUTDOWN", "STAGE", "RCS"];
+		float rowWidth = Controls.RowWidth(labels.Length, width, ButtonGap);
+		float left = centreX - rowWidth / 2;
+		float top = labelsY - ButtonHeight / 2 - 4;
+		Controls.BeginRegion(c, "engine", new float2(left, top), new float2(left + rowWidth, top + ButtonHeight));
+		float x0 = left;
+		float2 Min(int i) => new(x0 + i * (width + ButtonGap), top);
+		float2 Max(int i) => Min(i) + new float2(width, ButtonHeight);
+
+		var ignite = KSA.VehicleEngine.MainIgnite;
+		var shutdown = KSA.VehicleEngine.MainShutdown;
+		var rcs = KSA.FlightComputerRCSMode.Enabled;
+		if (Controls.Button(c, "IGNITE", "IGNITE", Min(0), Max(0), GameActions.IsOn(v, ignite), GameActions.IsDisabled(v, ignite)))
+			GameActions.Apply(v, ignite);
+		if (Controls.Button(c, "SHUTDOWN", "SHUTDOWN", Min(1), Max(1), false, GameActions.IsDisabled(v, shutdown)))
+			GameActions.Apply(v, shutdown);
+		if (Controls.Button(c, "STAGE", "STAGE", Min(2), Max(2), false, t.NextStage < 0))
+			GameActions.ActivateNextStage(v);
+		if (Controls.Button(c, "RCS", "RCS", Min(3), Max(3), GameActions.IsOn(v, rcs), GameActions.IsDisabled(v, rcs)))
+			GameActions.Apply(v, rcs, toggle: true);
+		Controls.EndRegion();
+	}
+
+	// ---- formatting -----------------------------------------------------------------------
+
+	static (string Value, string Unit) SplitDistance(double metres) => metres switch
+	{
+		< 10_000 => ($"{metres:0}", "M"),
+		< 10_000_000 => ($"{metres / 1000:0.0}", "KM"),
+		< 1e12 => ($"{metres / 1000:N0}", "KM"),
+		_ => ($"{metres / 1.495978707e11:0.00}", "AU"),
+	};
+
+	static string FormatDuration(double seconds)
+	{
+		var s = TimeSpan.FromSeconds(Math.Min(Math.Max(seconds, 0), TimeSpan.MaxValue.TotalSeconds - 1));
+		return s.TotalDays >= 1 ? $"{(int)s.TotalDays}D {s.Hours:00}:{s.Minutes:00}:{s.Seconds:00}" : $"{s.Hours:00}:{s.Minutes:00}:{s.Seconds:00}";
 	}
 
 	// ---- the gauges -------------------------------------------------------------------
@@ -142,40 +251,102 @@ public static class Hud
 	}
 
 	// "T+ 00:01:23" with the vehicle's name under it, centred on the screen.
-	static void DrawClock(Canvas c, float2 centre, float labelsY, Telemetry t)
+	// Time, at the top centre of the screen on a soft shade: "T+ 00:01:23", universal time
+	// and the vehicle's name under it, then the warp control (slower, the speed, faster; the
+	// speed itself goes back to real time).
+	const float TimeTop = 58;
+	const float TimeShade = 210;
+
+	static void DrawTime(Canvas c, float centreX, Telemetry t)
 	{
+		c.VerticalGradient(0, TimeShade, ShadeTop, Clear);
+
+		float clockY = TimeTop + ClockSize / 2;
 		var s = TimeSpan.FromSeconds(Math.Max(t.MissionSeconds, 0));
 		string digits = $"{(int)s.TotalHours:00}:{s.Minutes:00}:{s.Seconds:00}";
 		const string prefix = "T+";
 		const float prefixSize = 26, space = 12;
-
 		float prefixWidth = c.MeasureText(Fonts.Medium, prefixSize, prefix, tracking: 1);
 		float digitsWidth = c.MeasureText(Fonts.SemiBold, ClockSize, digits, tabular: true);
-		float left = centre.X - (prefixWidth + space + digitsWidth) / 2;
+		float left = centreX - (prefixWidth + space + digitsWidth) / 2;
 		var colour = t.BeforeLiftoff ? Faint : White;
-		c.Text(Fonts.Medium, prefixSize, new float2(left, centre.Y), Align.Left, t.BeforeLiftoff ? Faint : Dim, prefix, tracking: 1);
-		c.Text(Fonts.SemiBold, ClockSize, new float2(left + prefixWidth + space, centre.Y), Align.Left, colour, digits, tabular: true);
+		c.Text(Fonts.Medium, prefixSize, new float2(left, clockY), Align.Left, t.BeforeLiftoff ? Faint : Dim, prefix, tracking: 1);
+		c.Text(Fonts.SemiBold, ClockSize, new float2(left + prefixWidth + space, clockY), Align.Left, colour, digits, tabular: true);
 
-		c.Text(Fonts.Medium, SmallSize, new float2(centre.X, labelsY), Align.Center, Dim, t.VehicleId.ToUpperInvariant(), tracking: Tracking);
+		// Universal time as the stock clock counts it (years, days of 365, h:m:s), and the vehicle.
+		var now = t.Now;
+		string ut = $"UT {(int)now.Years}Y {(int)now.Days % 365:000}D {(int)now.Hours % 24:00}:{(int)now.Minutes % 60:00}:{(int)now.Seconds() % 60:00}";
+		float lineY = clockY + ClockSize / 2 + 16;
+		c.Text(Fonts.Medium, SmallSize, new float2(centreX - 12, lineY), Align.Right, Dim, ut, tracking: 1.2f, tabular: true);
+		c.Text(Fonts.Medium, SmallSize, new float2(centreX + 12, lineY), Align.Left, Dim, t.VehicleId.ToUpperInvariant(), tracking: Tracking);
+
+		// Warp: [-] [speed] [+]
+		const float side = 32, middle = 110, gap = 4;
+		float rowWidth = 2 * side + middle + 2 * gap;
+		float rowLeft = centreX - rowWidth / 2, top = lineY + 18;
+		Controls.BeginRegion(c, "warp", new float2(rowLeft, top), new float2(rowLeft + rowWidth, top + ButtonHeight));
+		if (Controls.Button(c, "WARP-", "-", new float2(rowLeft, top), new float2(rowLeft + side, top + ButtonHeight), disabled: t.SimSpeed <= 0))
+			GameActions.WarpSlower();
+		float mid = rowLeft + side + gap;
+		string speed = t.AutoWarp ? $"AUTO ×{FormatSpeed(t.SimSpeed)}" : t.SimSpeed <= 0 ? "PAUSED" : $"×{FormatSpeed(t.SimSpeed)}";
+		if (Controls.Button(c, "WARP1", speed, new float2(mid, top), new float2(mid + middle, top + ButtonHeight), lit: t.SimSpeed != 1 || t.AutoWarp))
+			GameActions.WarpRealtime();
+		float plus = mid + middle + gap;
+		if (Controls.Button(c, "WARP+", "+", new float2(plus, top), new float2(plus + side, top + ButtonHeight)))
+			GameActions.WarpFaster();
+		Controls.EndRegion();
 	}
 
-	// "SURF   HDG 090   PITCH 45   ROLL 0" under the navball: the frame, then the nose's
-	// attitude in it.
-	static void DrawAttitude(Canvas c, float2 at, NavballState s)
+	static string FormatSpeed(double speed) => speed switch
+	{
+		< 1 => $"{speed:0.0}",
+		< 10_000 => $"{speed:0}",
+		< 10_000_000 => $"{speed / 1000:0}K",
+		_ => $"{speed / 1_000_000:0}M",
+	};
+
+	// Heading above the ball, pitch left of it, roll right of it, like an instrument's scales.
+	static void DrawAttitude(Canvas c, float2 ball, NavballState s)
 	{
 		var (heading, pitch, roll) = Navball.Attitude(s);
-		string frame = s.Frame switch
+		float r = NavballRadius;
+		c.Text(Fonts.SemiBold, SmallSize, ball + new float2(0, -r - 14), Align.Center, White, $"{heading:000}", tabular: true);
+		c.Text(Fonts.Medium, SmallSize - 3, ball + new float2(-r - 12, -11), Align.Right, Dim, "PITCH", tracking: 1.4f);
+		c.Text(Fonts.SemiBold, SmallSize, ball + new float2(-r - 12, 9), Align.Right, White, $"{pitch:0}", tabular: true);
+		c.Text(Fonts.Medium, SmallSize - 3, ball + new float2(r + 12, -11), Align.Left, Dim, "ROLL", tracking: 1.4f);
+		c.Text(Fonts.SemiBold, SmallSize, ball + new float2(r + 12, 9), Align.Left, White, $"{roll:0}", tabular: true);
+	}
+
+	// The navball's reference frame, as the stock navball's buttons: STAR SURF ORBT OVEL TGT
+	// BURN, the current one lit; TGT needs a target and BURN a planned burn.
+	static readonly (string Label, KSA.VehicleReferenceFrame Frame)[] Frames =
+	[
+		("STAR", KSA.VehicleReferenceFrame.EclBody), ("SURF", KSA.VehicleReferenceFrame.EnuBody),
+		("ORBT", KSA.VehicleReferenceFrame.Lvlh), ("OVEL", KSA.VehicleReferenceFrame.VlfBody),
+		("TGT", KSA.VehicleReferenceFrame.Dock), ("BURN", KSA.VehicleReferenceFrame.BurnBody),
+	];
+
+	static void DrawFrames(Canvas c, float centreX, float labelsY, Telemetry t, KSA.Vehicle v)
+	{
+		const float width = 42, gap = 3;
+		float rowWidth = Controls.RowWidth(Frames.Length, width, gap);
+		float left = centreX - rowWidth / 2, top = labelsY - ButtonHeight / 2 - 4;
+		Controls.BeginRegion(c, "frames", new float2(left, top), new float2(left + rowWidth, top + ButtonHeight));
+		for (int i = 0; i < Frames.Length; i++)
 		{
-			KSA.VehicleReferenceFrame.EclBody => "STAR",
-			KSA.VehicleReferenceFrame.EnuBody => "SURF",
-			KSA.VehicleReferenceFrame.Lvlh => "ORBT",
-			KSA.VehicleReferenceFrame.VlfBody => "OVEL",
-			KSA.VehicleReferenceFrame.BurnBody => "BURN",
-			KSA.VehicleReferenceFrame.Dock => "TGT",
-			_ => "",
-		};
-		string text = $"{frame}   HDG {heading:000}   PITCH {pitch:0}   ROLL {roll:0}";
-		c.Text(Fonts.Medium, SmallSize, at, Align.Center, Dim, text, tracking: Tracking, tabular: true);
+			var (label, frame) = Frames[i];
+			bool disabled = frame switch
+			{
+				KSA.VehicleReferenceFrame.Dock => v.Target == null,
+				KSA.VehicleReferenceFrame.BurnBody => !v.FlightComputer.BurnPlan.HasActiveBurns,
+				_ => false,
+			};
+			float x = left + i * (width + gap);
+			if (Controls.Button(c, $"FRAME {label}", label, new float2(x, top), new float2(x + width, top + ButtonHeight),
+					lit: t.Navball.Frame == frame, disabled: disabled))
+				v.SetNavBallFrame(frame);
+		}
+		Controls.EndRegion();
 	}
 
 	// Label left and value right on one line, the bar under them; right edge at `right`.

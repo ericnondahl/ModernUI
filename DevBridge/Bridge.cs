@@ -20,11 +20,14 @@ public class Bridge
 	static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
 	HttpListener? _listener;
+	HarmonyLib.Harmony? _harmony;
 	public static long Frame;
 
 	[StarMapAllModsLoaded]
 	public void Start()
 	{
+		_harmony = new HarmonyLib.Harmony("DevBridge");
+		SyntheticMouse.Patch(_harmony);
 		var port = int.TryParse(Environment.GetEnvironmentVariable("KSA_DEVBRIDGE_PORT"), out var p) ? p : 7878;
 		try
 		{
@@ -41,7 +44,11 @@ public class Bridge
 	}
 
 	[StarMapUnload]
-	public void Stop() => _listener?.Close();
+	public void Stop()
+	{
+		_listener?.Close();
+		_harmony?.UnpatchAll("DevBridge");
+	}
 
 	[StarMapAfterOnFrame]
 	public void AfterOnFrame(double currentPlayerTime, double dtPlayer)
@@ -90,6 +97,9 @@ public class Bridge
 				"/newgame" => await OnGameThread(Commands.NewGame),
 				"/launch" => await OnGameThread(() => Commands.Launch(Arg("vehicle"), Arg("site"))),
 				"/fly" => await OnGameThread(() => Commands.Fly(double.Parse(Arg("alt")), query["speed"] is { } s ? double.Parse(s) : null)),
+				"/mouse" => await Commands.MouseProbe(float.Parse(Arg("x")), float.Parse(Arg("y"))),
+				"/buttons" => await OnGameThread(Commands.ButtonNames),
+				"/click" => await Commands.Click(Arg("button")),
 				"/set" => await OnGameThread(() => Commands.SetEnum(Arg("enum"), Arg("value"))),
 				"/console" => await Commands.Console(Arg("cmd")),
 				"/ui" =>await OnGameThread(() => Commands.ShowUi(Arg("show") != "0")),

@@ -12,7 +12,6 @@
 		<AssemblyVersion>0.1.0.0</AssemblyVersion>
 		<Description>Dev tool: localhost HTTP control of KSA for screenshots and test flights.</Description>
 		<Copyright>MIT</Copyright>
-		<IncludeHarmony>false</IncludeHarmony>
 	</PropertyGroup>
 
 	<Import Project="..\tooling\msbuild\KsaMod.targets" />

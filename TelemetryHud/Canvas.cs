@@ -20,15 +20,25 @@ public readonly struct Canvas
 	/// <summary>Screen size in design units (height is always 1080).</summary>
 	public readonly float2 Size;
 	readonly float _scale;
+	// Physical pixels per ImGui unit (2 on a Retina display): text snaps to physical pixels.
+	readonly float _pixelsPerPoint;
 
-	Canvas(ImDrawListPtr draw, float2 pixels)
+	Canvas(ImDrawListPtr draw, float2 pixels, float pixelsPerPoint)
 	{
 		Draw = draw;
+		_pixelsPerPoint = pixelsPerPoint > 0 ? pixelsPerPoint : 1;
 		_scale = pixels.Y / DesignHeight;
 		Size = new float2(pixels.X / _scale, DesignHeight);
 	}
 
-	public static Canvas ForScreen() => new(ImGui.GetForegroundDrawList(), ImGui.GetIO().DisplaySize);
+	public static Canvas ForScreen()
+	{
+		var io = ImGui.GetIO();
+		return new(ImGui.GetForegroundDrawList(), io.DisplaySize, io.DisplayFramebufferScale.Y);
+	}
+
+	/// <summary>Rounds an ImGui coordinate to the nearest physical pixel.</summary>
+	float Snap(float v) => MathF.Round(v * _pixelsPerPoint) / _pixelsPerPoint;
 
 	public float Px(float units) => units * _scale;
 	public float2 Px(float2 units) => units * _scale;
@@ -51,8 +61,11 @@ public readonly struct Canvas
 
 	int Segments(float radius) => Math.Clamp((int)(Px(radius) * 0.6f), 12, 128);
 
-	public void Rect(float2 min, float2 max, ImColor8 color, float thickness) =>
-		Draw.AddRect(Px(min), Px(max), color, 0, default, Px(thickness));
+	public void Rect(float2 min, float2 max, ImColor8 color, float thickness, float rounding = 0) =>
+		Draw.AddRect(Px(min), Px(max), color, Px(rounding), default, Px(thickness));
+
+	public void FillRect(float2 min, float2 max, ImColor8 color, float rounding = 0) =>
+		Draw.AddRectFilled(Px(min), Px(max), color, Px(rounding));
 
 	public void Triangle(float2 a, float2 b, float2 c, ImColor8 color, float thickness) =>
 		Draw.AddTriangle(Px(a), Px(b), Px(c), color, Px(thickness));
@@ -111,7 +124,7 @@ public readonly struct Canvas
 		{
 			width += tabular && char.IsAsciiDigit(text[i]) ? digit : Advance(font, px, text[i]);
 			if (i < text.Length - 1)
-				width += Px(tracking);
+				width += Snap(Px(tracking));
 		}
 		return width / _scale;
 	}
@@ -133,17 +146,22 @@ public readonly struct Canvas
 		float y = Px(at.Y) - baked.Ascent + px * CapHeight / 2;
 
 		float digit = tabular ? Advance(font, px, '0') : 0;
+		// Whole physical pixels (not ImGui units, which are 2 pixels on a Retina display):
+		// glyphs at fractional positions get snapped unevenly, which shows as random gaps in
+		// small tracked text.
+		float trackingPx = Snap(Px(tracking));
+		y = Snap(y);
 		for (int i = 0; i < text.Length; i++)
 		{
 			char c = text[i];
 			float advance = Advance(font, px, c);
 			float cell = tabular && char.IsAsciiDigit(c) ? digit : advance;
-			var glyphAt = new float2(x + (cell - advance) / 2, y);
+			var glyphAt = new float2(Snap(x + (cell - advance) / 2), y);
 			// A soft shadow a little below each glyph keeps text legible over bright cloud.
 			if (shadow)
 				Draw.AddText(font, px, glyphAt + new float2(0, Px(ShadowOffset)), Shadow, Span(ref c));
 			Draw.AddText(font, px, glyphAt, color, Span(ref c));
-			x += cell + Px(tracking);
+			x += cell + trackingPx;
 		}
 	}
 

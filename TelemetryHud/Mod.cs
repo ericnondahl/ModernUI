@@ -47,6 +47,6 @@ public class TelemetryHud
 			Hud.Hide();
 			return;
 		}
-		Hud.Draw(Telemetry.Read(vehicle!));
+		Hud.Draw(Telemetry.Read(vehicle!), vehicle!);
 	}
 }

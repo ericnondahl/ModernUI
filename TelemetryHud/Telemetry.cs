@@ -23,7 +23,21 @@ public readonly record struct Telemetry(
 	float Throttle,
 	bool EnginesOn,
 	IReadOnlyList<Propellant> Propellants,
-	NavballState Navball)
+	NavballState Navball,
+	/// <summary>Delta-v left and thrust-to-weight, as the stock engine gauge shows them.</summary>
+	double DeltaV,
+	/// <summary>Delta-v of every stage left, as the stock staging panel's total.</summary>
+	double TotalDeltaV,
+	double ThrustToWeight,
+	/// <summary>Apoapsis and periapsis heights above the surface; null where the stock gauge blanks them.</summary>
+	double? Apoapsis,
+	double? Periapsis,
+	UniverseTime NextApoapsis,
+	UniverseTime NextPeriapsis,
+	UniverseTime Now,
+	double SimSpeed,
+	bool AutoWarp,
+	int NextStage)
 {
 	public static Telemetry Read(Vehicle vehicle)
 	{
@@ -52,7 +66,29 @@ public readonly record struct Telemetry(
 			Throttle: vehicle.GetManualThrottle(),
 			EnginesOn: vehicle.IsAnyEngineActive(),
 			Propellants: ReadPropellants(vehicle.Parts),
-			Navball: NavballState.Read(vehicle));
+			Navball: NavballState.Read(vehicle),
+			DeltaV: vehicle.NavBallData.DeltaV,
+			TotalDeltaV: vehicle.Parts.PerformanceSequences.TotalDeltaV,
+			ThrustToWeight: vehicle.NavBallData.ThrustWeightRatio,
+			Apoapsis: ReadApoapsis(vehicle),
+			Periapsis: ReadPeriapsis(vehicle),
+			NextApoapsis: vehicle.NextApoapsisTime,
+			NextPeriapsis: vehicle.NextPeriapsisTime,
+			Now: Universe.GetElapsedTime(),
+			SimSpeed: Universe.GetSimulationSpeed(),
+			AutoWarp: Universe.IsAutoWarpActive,
+			NextStage: GameActions.NextStage(vehicle));
+	}
+
+	// As Program's gauge update blanks them: apoapsis at or below 1 m, periapsis at or below
+	// 1 m or on a trajectory that ends in an impact.
+	static double? ReadApoapsis(Vehicle v) => v.Orbit.ApoapsisAltitude is var a && a > 1 ? a : null;
+
+	static double? ReadPeriapsis(Vehicle v)
+	{
+		double p = v.Orbit.PeriapsisAltitude;
+		bool impact = v.FlightPlan.FirstPatch?.EndTransition == PatchTransition.Impact;
+		return p > 1 && !impact ? p : null;
 	}
 
 	// As the game's Resources panel gathers its rows (ResourcesPanel.Gather): every

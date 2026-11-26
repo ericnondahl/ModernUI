@@ -1,4 +1,6 @@
 using System.Reflection;
+using ImGui = Brutal.ImGuiApi.ImGui;
+using Brutal.ImGuiApi;
 using System.Runtime.InteropServices;
 using Brutal.Numerics;
 using KSA;
@@ -24,6 +26,8 @@ public static class Commands
 			["/fly?alt=<m>&speed=<m/s>"] = "teleport the controlled vehicle onto a vertical climb through that altitude; without speed, a circular orbit",
 			["/console?cmd=<line>"] = "run a game console command (simspeed, refill, loadvehicle, control, exit, ...) and return its output",
 			["/set?enum=<KSA enum>&value=<name>"] = "a flight computer setting as the stock buttons set it, e.g. enum=FlightComputerAttitudeTrackTarget&value=Prograde, enum=VehicleEngine&value=MainIgnite",
+			["/buttons"] = "TelemetryHud's buttons by id",
+			["/click?button=<id>"] = "click a TelemetryHud button through ImGui's input, as the mouse would",
 			["/ui?show=0|1"] = "hide or show the game's whole UI (mods' too)",
 			["/wait?frames=<n>"] = "return after n more frames (default 60)",
 		},
@@ -47,6 +51,11 @@ public static class Commands
 				altitudeAsl = v.GetBarometricAltitude(),
 				surfaceSpeed = surface.Length(),
 				orbitalSpeed = v.Orbit.StateVectors.VelocityCci.Length(),
+				rcs = v.FlightComputer.RCSMode.ToString(),
+				navballFrame = v.NavBallData.Frame.ToString(),
+				enginesOn = v.IsAnyEngineActive(),
+				attitude = $"{v.FlightComputer.AttitudeMode} {v.FlightComputer.AttitudeTrackTarget}",
+				nextStage = v.Parts.SequenceList.GetNextSequenceNumber(),
 			};
 		}
 		return new
@@ -56,6 +65,7 @@ public static class Commands
 			map,
 			inFlight = v != null && !Program.EditorFlag && !map,
 			simSpeed = Universe.GetSimulationSpeed(),
+			autoWarp = Universe.IsAutoWarpActive,
 			gameSeconds = Universe.GetElapsedSeconds(),
 			vehicle,
 		};
@@ -68,7 +78,7 @@ public static class Commands
 
 	public static async Task<object?> Screenshot(string? path)
 	{
-		path ??= Path.Combine(Constants.DocumentsFolderPath, "devbridge", $"shot-{DateTime.Now:yyyyMMdd-HHmmss-fff}.png");
+		path ??= Path.Combine(KSA.Constants.DocumentsFolderPath, "devbridge", $"shot-{DateTime.Now:yyyyMMdd-HHmmss-fff}.png");
 		path = Path.GetFullPath(path);
 		Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 		if (File.Exists(path))
@@ -167,10 +177,28 @@ public static class Commands
 		state.Orbit.Parent!.Children.Add(vehicle);
 		vehicle.UpdatePerFrameData();
 
+		// Crew, so the vehicle is controllable (the game greys out engine controls otherwise):
+		// a kitten in every seat, as the benchmark's @crew seats them.
+		int seated = 0;
+		for (int i = 0; i < 8; i++)
+		{
+			string kittenName = $"Test Kitten {i + 1}";
+			var kitten = Universe.KittenRoster.Find(kittenName);
+			if (kitten == null)
+			{
+				kitten = new KittenRosterEntryData(kittenName, "HunterKitten");
+				Universe.KittenRoster.Kittens.Add(kitten);
+			}
+			if (vehicle.AddCrewToFirstAvailableSeat(kitten.NameHash) != CrewSeatResult.Seated)
+				break;
+			kitten.StartMission(vehicle.Id);
+			seated++;
+		}
+
 		Program.ControlledVehicle = vehicle;
 		Program.MainViewport.MapCamera.SetFollow(vehicle, tidalLocking: false, changeControl: true, alert: false);
 		Program.MainViewport.BaseCamera.SetFollow(vehicle, tidalLocking: false, changeControl: true, alert: false);
-		return new { vehicle = vehicle.Id, site = siteId };
+		return new { vehicle = vehicle.Id, site = siteId, crew = seated };
 	}
 
 	// The benchmark's Vehicles.Fly: the controlled vehicle onto a vertical climb through
@@ -224,7 +252,7 @@ public static class Commands
 	// The newest KittenSpaceAgency.*.log in the profile's logs folder: this run's.
 	static string? GameLog()
 	{
-		var dir = Path.Combine(Constants.DocumentsFolderPath, "logs");
+		var dir = Path.Combine(KSA.Constants.DocumentsFolderPath, "logs");
 		return Directory.Exists(dir)
 			? new DirectoryInfo(dir).GetFiles("KittenSpaceAgency.*.log").OrderByDescending(f => f.LastWriteTimeUtc).FirstOrDefault()?.FullName
 			: null;
@@ -243,6 +271,65 @@ public static class Commands
 		vehicle.SetEnum(e);
 		return new { set = $"{type.Name}.{e}", attitude = vehicle.FlightComputer.AttitudeMode.ToString(),
 			track = vehicle.FlightComputer.AttitudeTrackTarget.ToString(), frame = vehicle.NavBallData.Frame.ToString() };
+	}
+
+	// ---- clicking HUD buttons -----------------------------------------------------------
+
+	// TelemetryHud records each button's rectangle by id every frame (Controls.Rects).
+	static Dictionary<string, (float2 Min, float2 Max)> HudButtons()
+	{
+		var type = AppDomain.CurrentDomain.GetAssemblies()
+			.Select(a => a.GetType("TelemetryHud.Controls")).FirstOrDefault(t => t != null)
+			?? throw new InvalidOperationException("TelemetryHud isn't loaded");
+		return type.GetField("Rects", BindingFlags.Public | BindingFlags.Static)?.GetValue(null) as Dictionary<string, (float2 Min, float2 Max)>
+			?? throw new MissingMemberException("TelemetryHud.Controls.Rects");
+	}
+
+	public static async Task<object?> MouseProbe(float x, float y)
+	{
+		await Bridge.OnGameThread(() => { ImGui.GetIO().AddMousePosEvent(x, y); return null; });
+		await WaitFrames(3);
+		return await Bridge.OnGameThread(() =>
+		{
+			var io = ImGui.GetIO();
+			return new
+			{
+				mouse = new[] { io.MousePos.X, io.MousePos.Y },
+				display = new[] { io.DisplaySize.X, io.DisplaySize.Y },
+				wantCaptureMouse = io.WantCaptureMouse,
+				anyWindowHovered = ImGui.IsWindowHovered(ImGuiHoveredFlags.AnyWindow),
+			};
+		});
+	}
+
+	public static object? ButtonNames() => new { buttons = HudButtons().Keys.OrderBy(k => k).ToArray() };
+
+	// A real click through ImGui's input queue: move, press, release, a few frames apart,
+	// so the HUD sees it as the player's mouse would make it.
+	public static async Task<object?> Click(string id)
+	{
+		var rect = (ValueTuple<float2, float2>)(await Bridge.OnGameThread(() =>
+			HudButtons().TryGetValue(id, out var r) ? r : throw new ArgumentException($"no button '{id}'; see /buttons")))!;
+		var (min, max) = rect;
+		var at = (min + max) / 2;
+		SyntheticMouse.Active = true;
+		try
+		{
+			await Bridge.OnGameThread(() => { ImGui.GetIO().AddMousePosEvent(at.X, at.Y); return null; });
+			await WaitFrames(3);
+			await Bridge.OnGameThread(() => { ImGui.GetIO().AddMouseButtonEvent(0, true); return null; });
+			await WaitFrames(3);
+			await Bridge.OnGameThread(() => { ImGui.GetIO().AddMouseButtonEvent(0, false); return null; });
+			await WaitFrames(3);
+			// Off the window, so the button isn't left hovered in later screenshots.
+			await Bridge.OnGameThread(() => { ImGui.GetIO().AddMousePosEvent(-float.MaxValue, -float.MaxValue); return null; });
+			await WaitFrames(2);
+		}
+		finally
+		{
+			SyntheticMouse.Active = false;
+		}
+		return new { clicked = id, at = new[] { at.X, at.Y } };
 	}
 
 	public static object? ShowUi(bool show)

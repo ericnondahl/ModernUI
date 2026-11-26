@@ -80,8 +80,10 @@ KSA_VEHICLE=Hunter scripts/dev.sh flight  # new game, the Hunter on the pad (KSA
 scripts/dev.sh shot hud                   # PNG of the next frame, UI included -> screenshots/hud-<time>.png
 scripts/dev.sh gallery v3                 # the same four states every time: orbit, 45 km, 12 km, pad
 scripts/dev.sh call status                # flight state, altitude, speed
+scripts/smoke.sh                          # a real launch through the HUD's buttons: stage, ignite, climb, shutdown
 scripts/burst.sh tumble 32                # 32 quick shots of the navball, tiled into one contact sheet
 scripts/dev.sh call vehicles              # vehicles to launch (yours and the defaults)
+scripts/dev.sh call click --data-urlencode button=STAGE   # click a HUD button through ImGui
 scripts/dev.sh console simspeed 10        # any game console command, with its log output
 scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget --data-urlencode value=Prograde
                                           # flight computer settings, as the stock buttons set them
