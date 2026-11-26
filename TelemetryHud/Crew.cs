@@ -36,7 +36,12 @@ public static class Crew
 
 	enum Face { Well, Unwell, Lost }
 
-	public static float Draw(Canvas c, float left, float top, Vehicle v, UniverseTime now)
+	/// <summary>
+	/// The card with its top left at (left, top); returns its bottom. Closed, it is one line:
+	/// the crew as small cats and either "ALL WELL" or the first thing wrong. forceOpen: the
+	/// FULL mode's always-open card.
+	/// </summary>
+	public static float Draw(Canvas c, float left, float top, Vehicle v, UniverseTime now, bool forceOpen)
 	{
 		var kittens = new List<(KittenRosterEntryData Kitten, IVASeat? Seat)>();
 		foreach (var seat in v.Crew)
@@ -47,6 +52,37 @@ public static class Crew
 
 		bool lifeSupport = Universe.Rules.LifeSupport;
 		var forecast = v.LifeSupportForecast;
+		bool worried = lifeSupport && forecast.Kittens > 0 && forecast.Level != LifeSupportLevel.Ok;
+
+		// Systems: power, life support, radiation; and what's wrong, for the closed card.
+		var (powerText, powerFraction) = Power(v);
+		var systems = new List<(string Label, string Value, bool Alert)> { ("POWER", powerText, powerFraction < 0.2) };
+		if (lifeSupport && forecast.Kittens > 0)
+		{
+			systems.Add(("AIR", Remaining(forecast.AirRemaining, now), forecast.GetSupplyLevel(forecast.AirRemaining) != LifeSupportLevel.Ok));
+			systems.Add(("WATER", Remaining(forecast.WaterRemaining, now), forecast.GetSupplyLevel(forecast.WaterRemaining) != LifeSupportLevel.Ok));
+			systems.Add(("FOOD", Remaining(forecast.FoodRemaining, now), forecast.GetSupplyLevel(forecast.FoodRemaining) != LifeSupportLevel.Ok));
+			systems.Add(("CO2", Remaining(forecast.ScrubberRemaining, now), forecast.GetSupplyLevel(forecast.ScrubberRemaining) != LifeSupportLevel.Ok));
+		}
+		if (Universe.Rules.Radiation)
+		{
+			var (hereDose, orbitDose) = DoseRates(v);
+			systems.Add(("DOSE MSV/H", hereDose, false));
+			systems.Add(("ORBIT AVG", orbitDose, false));
+		}
+		var alerts = new List<string>();
+		foreach (var (k, _) in kittens)
+			if (k.Kia)
+				alerts.Add($"{k.Name.ToUpperInvariant()} LOST");
+			else if (k.HasRadiationSickness(now))
+				alerts.Add($"{k.Name.ToUpperInvariant()} SICK");
+		foreach (var (label, value, alert) in systems)
+			if (alert)
+				alerts.Add($"{label} {value}");
+
+		bool open = forceOpen || Settings.Current.CrewOpen;
+		if (!open)
+			return DrawClosed(c, left, top, v, kittens, alerts, worried, now);
 		int crew = Math.Min(kittens.Count, MaxCrew);
 		float facesHeight = crew > 0 ? FaceSize + 52 + ButtonRow : 0;
 		var moving = kittens.FirstOrDefault(k => k.Seat != null && k.Kitten.NameHash == _moving);
@@ -62,10 +98,14 @@ public static class Crew
 
 		c.Text(Fonts.Medium, SmallSize + 1, new float2(left, top + 14), Align.Left, Dim, "CREW", tracking: 2.4f);
 		c.Text(Fonts.SemiBold, SmallSize + 1, new float2(left + 70, top + 14), Align.Left, White, $"{kittens.Count}", tabular: true);
+		if (!forceOpen && Controls.Button(c, "CREW", "CLOSE", new float2(right - 64, top), new float2(right, top + 28), lit: true))
+		{
+			Settings.Current.CrewOpen = false;
+			Settings.Current.Save();
+		}
 
 		// The cats.
 		float y = top + 28;
-		bool worried = lifeSupport && forecast.Kittens > 0 && forecast.Level != LifeSupportLevel.Ok;
 		for (int i = 0; i < crew; i++)
 		{
 			var (k, seat) = kittens[i];
@@ -117,21 +157,6 @@ public static class Crew
 			y += seatsHeight;
 		}
 
-		// Systems: power, life support, radiation.
-		var systems = new List<(string Label, string Value, bool Alert)> { ("POWER", Power(v), false) };
-		if (lifeSupport && forecast.Kittens > 0)
-		{
-			systems.Add(("AIR", Remaining(forecast.AirRemaining, now), forecast.GetSupplyLevel(forecast.AirRemaining) != LifeSupportLevel.Ok));
-			systems.Add(("WATER", Remaining(forecast.WaterRemaining, now), forecast.GetSupplyLevel(forecast.WaterRemaining) != LifeSupportLevel.Ok));
-			systems.Add(("FOOD", Remaining(forecast.FoodRemaining, now), forecast.GetSupplyLevel(forecast.FoodRemaining) != LifeSupportLevel.Ok));
-			systems.Add(("CO2", Remaining(forecast.ScrubberRemaining, now), forecast.GetSupplyLevel(forecast.ScrubberRemaining) != LifeSupportLevel.Ok));
-		}
-		if (Universe.Rules.Radiation)
-		{
-			var (here, orbit) = DoseRates(v);
-			systems.Add(("DOSE MSV/H", here, false));
-			systems.Add(("ORBIT AVG", orbit, false));
-		}
 		const int columns = 4;
 		float colWidth = Width / columns;
 		for (int i = 0; i < systems.Count; i++)
@@ -246,7 +271,7 @@ public static class Crew
 	// ---- systems ----------------------------------------------------------------------------
 
 	// Battery charge, as ResourcesPanel sums it.
-	static string Power(Vehicle v)
+	static (string Text, double Fraction) Power(Vehicle v)
 	{
 		double charge = 0, capacity = 0;
 		var batteries = v.Parts.Batteries.ModulesAndStates.GetEnumerator();
@@ -255,7 +280,42 @@ public static class Crew
 			charge += batteries.Current.State.Charge.Value();
 			capacity += batteries.Current.Module.MaximumCapacity.Value();
 		}
-		return capacity > 0 ? $"{charge / capacity * 100:0}%" : "—";
+		return capacity > 0 ? ($"{charge / capacity * 100:0}%", charge / capacity) : ("—", 1);
+	}
+
+	// The closed card: one line, the crew as small cats, then all well or what's wrong.
+	static float DrawClosed(Canvas c, float left, float top, Vehicle v, List<(KittenRosterEntryData Kitten, IVASeat? Seat)> kittens,
+		List<string> alerts, bool worried, UniverseTime now)
+	{
+		const float height = 28, mini = 26;
+		float right = left + Width;
+		Controls.BeginRegion(c, "crew", new float2(left, top), new float2(right, top + height));
+		c.FillRect(new float2(left - Pad, top - Pad), new float2(right + Pad, top + height + Pad), Backing, 6);
+		float cy = top + height / 2;
+		c.Text(Fonts.Medium, SmallSize + 1, new float2(left, cy), Align.Left, Dim, "CREW", tracking: 2.4f);
+		float x = left + 70;
+		foreach (var (k, _) in kittens.Take(MaxCrew))
+		{
+			var face = k.Kia ? Face.Lost : k.HasRadiationSickness(now) || worried ? Face.Unwell : Face.Well;
+			DrawCat(c, new float2(x + mini / 2, cy - 1), mini, k.Name, face);
+			x += mini + 6;
+		}
+		string summary = alerts.Count == 0 ? "ALL WELL" : alerts.Count == 1 ? alerts[0] : $"{alerts[0]}  +{alerts.Count - 1}";
+		if (alerts.Count > 0)
+		{
+			float w = c.MeasureText(Fonts.SemiBold, SmallSize, summary, tracking: 1.4f);
+			c.FillRect(new float2(x + 6, top + 4), new float2(x + 18 + w, top + height - 4), new ImColor8(255, 255, 255, 230), 3);
+			c.Text(Fonts.SemiBold, SmallSize, new float2(x + 12, cy), Align.Left, new ImColor8(0, 0, 0, 255), summary, tracking: 1.4f, shadow: false);
+		}
+		else
+			c.Text(Fonts.Medium, SmallSize, new float2(x + 12, cy), Align.Left, Dim, summary, tracking: 1.4f);
+		if (Controls.Button(c, "CREW", "OPEN", new float2(right - 64, top), new float2(right, top + height)))
+		{
+			Settings.Current.CrewOpen = true;
+			Settings.Current.Save();
+		}
+		Controls.EndRegion();
+		return top + height + 2 * Pad + 8;
 	}
 
 	// Time left of a supply: "3.0D", "5.2H", "12M".

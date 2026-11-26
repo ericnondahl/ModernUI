@@ -102,6 +102,7 @@ public class Bridge
 				"/click" => await Commands.Click(Arg("button")),
 				"/burn" => await OnGameThread(() => Commands.CreateBurn(double.Parse(Arg("dv")))),
 				"/target" => await OnGameThread(() => Commands.SetTarget(query["id"] ?? "")),
+				"/key" => await Commands.Key(Arg("name")),
 				"/camera" => await OnGameThread(() => Commands.SetCamera(Arg("mode"))),
 				"/set" => await OnGameThread(() => Commands.SetEnum(Arg("enum"), Arg("value"))),
 				"/console" => await Commands.Console(Arg("cmd")),

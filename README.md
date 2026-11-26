@@ -6,7 +6,17 @@ skeuomorphic.
 
 Status: feature parity with the stock flight HUD, in a launch-webcast style (flat, black
 and white, Barlow). While the HUD shows (flight and map view), the game's own gauge
-panels hide; **Mods → Telemetry HUD** in the game's menu bar turns either off.
+panels hide; **Mods → Telemetry HUD** in the game's menu bar turns either off. F2 (the
+game's hide-UI key) hides it too.
+
+**Modes** (the **P** key cycles them; also **Mods → Telemetry HUD mode**):
+
+- **CLEAN**: the webcast look. Speed and altitude rings, navball, throttle and propellant
+  bars, T+. No controls.
+- **FLIGHT** (default): everything; staging, crew and autopilot are one-line headers that
+  open on a click (the crew line shows the crew as small cats, and "ALL WELL" or the first
+  thing wrong); the burn and target cards appear only when they apply.
+- **FULL**: everything, every panel open.
 
 | Where | What | Stock gauge it replaces |
 |---|---|---|
@@ -88,6 +98,7 @@ scripts/dev.sh call click --data-urlencode button=STAGE   # click a HUD button t
 scripts/dev.sh call burn --data-urlencode dv=100          # a test burn at the next apoapsis
 scripts/dev.sh call camera --data-urlencode mode=Map      # map view (Orbit: back to flight)
 scripts/dev.sh call target --data-urlencode id=Gemini7    # set a target (empty id clears it)
+scripts/dev.sh call key --data-urlencode name=P           # press a key through ImGui (P: next mode)
 scripts/dev.sh console simspeed 10        # any game console command, with its log output
 scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget --data-urlencode value=Prograde
                                           # flight computer settings, as the stock buttons set them

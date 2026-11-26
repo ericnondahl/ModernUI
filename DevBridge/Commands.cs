@@ -30,6 +30,7 @@ public static class Commands
 			["/click?button=<id>"] = "click a TelemetryHud button through ImGui's input, as the mouse would",
 			["/burn?dv=<m/s>"] = "a prograde burn at the next apoapsis, selected for editing",
 			["/target?id=<vehicle or body>"] = "set the controlled vehicle's target (empty id clears it)",
+			["/key?name=<ImGuiKey>"] = "press and release a key through ImGui (P cycles the HUD's modes)",
 			["/camera?mode=Orbit|Map|Free|IVA|Fixed"] = "switch the view (map view, flight view...)",
 			["/ui?show=0|1"] = "hide or show the game's whole UI (mods' too)",
 			["/wait?frames=<n>"] = "return after n more frames (default 60)",
@@ -360,6 +361,17 @@ public static class Commands
 			target = Universe.CurrentSystem?.Get(id) as IOrbiter ?? throw new ArgumentException($"no orbiter '{id}'");
 		InputEvents.ChangeTargetBuffer.Add(new InputEvents.ChangeTargetData { Vehicle = v, Target = target });
 		return new { target = target?.Id };
+	}
+
+	// A key press and release through ImGui's input queue (ImGuiKey names: P, F2, Escape...).
+	public static async Task<object?> Key(string name)
+	{
+		var key = Enum.Parse<ImGuiKey>(name, ignoreCase: true);
+		await Bridge.OnGameThread(() => { ImGui.GetIO().AddKeyEvent(key, true); return null; });
+		await WaitFrames(3);
+		await Bridge.OnGameThread(() => { ImGui.GetIO().AddKeyEvent(key, false); return null; });
+		await WaitFrames(3);
+		return new { key = key.ToString() };
 	}
 
 	public static object? SetCamera(string mode)

@@ -1,6 +1,19 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TelemetryHud;
+
+/// <summary>How much of the HUD shows.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<HudMode>))]
+public enum HudMode
+{
+	/// <summary>The webcast look: rings, navball, throttle and propellant, T+. No controls.</summary>
+	Clean,
+	/// <summary>Everything, with the side panels as one-line headers that open on a click.</summary>
+	Flight,
+	/// <summary>Everything, every panel open.</summary>
+	Full,
+}
 
 /// <summary>
 /// The player's choices, in TelemetryHud/settings.json in the game's profile folder
@@ -15,8 +28,14 @@ public class Settings
 	/// <summary>Skip the game's own gauge panels while the HUD shows.</summary>
 	public bool HideStockGauges { get; set; } = true;
 
+	/// <summary>How much of the HUD shows; the P key cycles it.</summary>
+	public HudMode Mode { get; set; } = HudMode.Flight;
+
+	/// <summary>Whether the crew card is open (in FLIGHT mode; closed, it is one line).</summary>
+	public bool CrewOpen { get; set; }
+
 	/// <summary>Whether the staging list is open (its header is always shown).</summary>
-	public bool StagingOpen { get; set; } = true;
+	public bool StagingOpen { get; set; }
 
 	/// <summary>Whether the autopilot panel is open (its header is always shown).</summary>
 	public bool AutopilotOpen { get; set; }

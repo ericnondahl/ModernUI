@@ -31,7 +31,7 @@ public static class Staging
 	// Column offsets in a row, from its left edge.
 	const float ColStage = 12, ColDeltaV = 190, ColTwr = 246, ColIsp = 302, ColBurn = 362, ColEnv = 392;
 
-	public static float Draw(Canvas c, float left, float top, Vehicle v)
+	public static float Draw(Canvas c, float left, float top, Vehicle v, bool forceOpen)
 	{
 		if (v is KittenEva)
 			return top;
@@ -39,7 +39,7 @@ public static class Staging
 		var sequences = list.Sequences;
 		var performance = v.Parts.PerformanceSequences.PerformanceSequences;
 		int next = list.GetNextSequenceNumber();
-		bool open = Settings.Current.StagingOpen;
+		bool open = forceOpen || Settings.Current.StagingOpen;
 		int rows = Math.Min(sequences.Length, MaxRows);
 		float height = RowHeight + (open && rows > 0 ? 8 + RowHeight + rows * (RowHeight + Gap) : 0);
 		float right = left + Width;
@@ -59,7 +59,7 @@ public static class Staging
 		if (Controls.Button(c, "RESOURCES", "RESOURCES", new float2(right - 64 - 6 - 100, top), new float2(right - 64 - 6, top + RowHeight),
 				lit: ResourceGroupsPanel.IsOpen))
 			ResourceGroupsPanel.Toggle();
-		if (Controls.Button(c, "STAGING", open ? "CLOSE" : "SET", new float2(right - 64, top), new float2(right, top + RowHeight), lit: open))
+		if (!forceOpen && Controls.Button(c, "STAGING", open ? "CLOSE" : "OPEN", new float2(right - 64, top), new float2(right, top + RowHeight), lit: open))
 		{
 			Settings.Current.StagingOpen = !open;
 			Settings.Current.Save();

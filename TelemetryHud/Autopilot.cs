@@ -55,10 +55,10 @@ public static class Autopilot
 	public static float Width => LabelColumn + ButtonsWidth;
 
 	/// <summary>The panel with its top right corner at (right, top), design units.</summary>
-	public static float Draw(Canvas c, float right, float top, Vehicle v)
+	public static float Draw(Canvas c, float right, float top, Vehicle v, bool forceOpen)
 	{
 		float left = right - Width;
-		bool open = Settings.Current.AutopilotOpen;
+		bool open = forceOpen || Settings.Current.AutopilotOpen;
 		float height = RowHeight + (open ? PanelHeight() : 0);
 		Controls.BeginRegion(c, "autopilot", new float2(left, top), new float2(right, top + height));
 
@@ -69,7 +69,7 @@ public static class Autopilot
 		// The header: what the autopilot is doing, and the button that opens the panel.
 		c.Text(Fonts.Medium, SmallSize, new float2(left, top + RowHeight / 2), Align.Left, Dim, "AUTOPILOT", tracking: 2.4f);
 		c.Text(Fonts.SemiBold, SmallSize + 2, new float2(right - 64 - 12, top + RowHeight / 2), Align.Right, White, State(v), tracking: 1.4f);
-		if (Controls.Button(c, "AUTOPILOT", open ? "CLOSE" : "SET", new float2(right - 64, top), new float2(right, top + RowHeight), lit: open))
+		if (!forceOpen && Controls.Button(c, "AUTOPILOT", open ? "CLOSE" : "OPEN", new float2(right - 64, top), new float2(right, top + RowHeight), lit: open))
 		{
 			Settings.Current.AutopilotOpen = !open;
 			Settings.Current.Save();

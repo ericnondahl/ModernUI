@@ -1,3 +1,4 @@
+using Brutal.ImGuiApi;
 using HarmonyLib;
 using KSA;
 using StarMap.API;
@@ -37,9 +38,14 @@ public class TelemetryHud
 	[StarMapAfterGui]
 	public void AfterGui(double dt)
 	{
-		// In flight and in map view (the stock gauges show in both); not in the editor.
+		// In flight and in map view (the stock gauges show in both); not in the editor, and not
+		// while the game's UI is hidden (F2).
 		Vehicle? vehicle = Program.ControlledVehicle;
-		bool inFlight = vehicle != null && !Program.EditorFlag;
+		bool inFlight = vehicle != null && !Program.EditorFlag && Program.DrawUI;
+
+		// P: the next mode (CLEAN, FLIGHT, FULL); not while typing (the console, a text field).
+		if (inFlight && Settings.Current.Enabled && !ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.P, false))
+			Hud.CycleMode();
 		if (!inFlight || !Settings.Current.Enabled)
 		{
 			Hud.Hide();

@@ -67,6 +67,8 @@ public static class Hud
 		Showing = true;
 		var c = Canvas.ForScreen();
 		Controls.BeginFrame();
+		var mode = Settings.Current.Mode;
+		bool clean = mode == HudMode.Clean, full = mode == HudMode.Full;
 		c.VerticalGradient(c.Size.Y - Band, c.Size.Y, Clear, Shade);
 
 		// Everything lines up on two rows: the rings' centre line and the labels' line.
@@ -80,32 +82,41 @@ public static class Hud
 
 		// Apoapsis and periapsis right of the rings.
 		float orbitLeft = ringsRight + 36;
-		DrawOrbit(c, orbitLeft, centreY, labelsY, t, vehicle);
+		if (!clean)
+			DrawOrbit(c, orbitLeft, centreY, labelsY, t, vehicle);
 
 		// The navball in the centre, its bottom on the same line as the rings' bottoms.
 		float ballY = centreY + Radius - NavballRadius;
 		var ball = Settings.Current.DebugNavballTumble ? Navball.Tumble(t.Navball) : t.Navball;
 		Navball.Draw(c, new float2(c.Size.X / 2, ballY), NavballRadius, ball);
-		DrawAttitude(c, new float2(c.Size.X / 2, ballY), ball);
-		DrawFrames(c, c.Size.X / 2, labelsY, t, vehicle);
+		if (!clean)
+		{
+			DrawAttitude(c, new float2(c.Size.X / 2, ballY), ball);
+			DrawFrames(c, c.Size.X / 2, labelsY, t, vehicle);
+		}
 
 		float ballRight = c.Size.X / 2 + NavballRadius;
 
 		// Time at the top centre: T+, universal time, the warp control.
-		DrawTime(c, c.Size.X / 2, t);
+		DrawTime(c, c.Size.X / 2, t, clean);
+		DrawModeToast(c, c.Size.X / 2, mode);
 
 		// Staging at the top left, the autopilot at the top right, below the game's menu bar
 		// (a window above ours: it would take their clicks).
+		// (None of it in CLEAN mode; all of it open in FULL.)
 		float panelsTop = c.Units(ImGui.GetFrameHeight()) + 24;
-		float leftColumn = Staging.Draw(c, Margin, panelsTop, vehicle);
-		leftColumn = Crew.Draw(c, Margin, leftColumn, vehicle, t.Now);
-		float rightColumn = Autopilot.Draw(c, c.Size.X - Margin, panelsTop, vehicle);
+		if (!clean)
+		{
+			float leftColumn = Staging.Draw(c, Margin, panelsTop, vehicle, full);
+			Crew.Draw(c, Margin, leftColumn, vehicle, t.Now, full);
+			float rightColumn = Autopilot.Draw(c, c.Size.X - Margin, panelsTop, vehicle, full);
 
-		// Cards that appear when they apply, under the autopilot: the next burn, and in map
-		// view the burn being edited.
-		rightColumn = Burns.DrawControl(c, c.Size.X - Margin, rightColumn, vehicle, t.Now.Seconds());
-		rightColumn = Rendezvous.Draw(c, c.Size.X - Margin, rightColumn, vehicle, t.Now);
-		Burns.DrawEditor(c, c.Size.X - Margin, rightColumn, t.Now.Seconds());
+			// Cards that appear when they apply, under the autopilot: the next burn, the
+			// target, and in map view the burn being edited.
+			rightColumn = Burns.DrawControl(c, c.Size.X - Margin, rightColumn, vehicle, t.Now.Seconds());
+			rightColumn = Rendezvous.Draw(c, c.Size.X - Margin, rightColumn, vehicle, t.Now);
+			Burns.DrawEditor(c, c.Size.X - Margin, rightColumn, t.Now.Seconds());
+		}
 
 		var bars = new List<Bar> { ThrottleBar(t) };
 		foreach (var p in t.Propellants.Take(MaxPropellantBars))
@@ -115,7 +126,8 @@ public static class Hud
 			DrawBar(c, right, labelsY - (bars.Count - 1 - i) * BarRowGap, bars[i]);
 
 		// The engine deck between the navball and the bars.
-		DrawEngine(c, (ballRight + right - BarWidth) / 2, centreY, labelsY, t, vehicle);
+		if (!clean)
+			DrawEngine(c, (ballRight + right - BarWidth) / 2, centreY, labelsY, t, vehicle);
 
 		Controls.EndFrame();
 
@@ -308,7 +320,7 @@ public static class Hud
 	const float TimeTop = 58;
 	const float TimeShade = 210;
 
-	static void DrawTime(Canvas c, float centreX, Telemetry t)
+	static void DrawTime(Canvas c, float centreX, Telemetry t, bool clockOnly)
 	{
 		c.VerticalGradient(0, TimeShade, ShadeTop, Clear);
 
@@ -323,6 +335,9 @@ public static class Hud
 		var colour = t.BeforeLiftoff ? Faint : White;
 		c.Text(Fonts.Medium, prefixSize, new float2(left, clockY), Align.Left, t.BeforeLiftoff ? Faint : Dim, prefix, tracking: 1);
 		c.Text(Fonts.SemiBold, ClockSize, new float2(left + prefixWidth + space, clockY), Align.Left, colour, digits, tabular: true);
+
+		if (clockOnly)
+			return;
 
 		// Universal time as the stock clock counts it (years, days of 365, h:m:s), and the vehicle.
 		var now = t.Now;
@@ -346,6 +361,39 @@ public static class Hud
 		if (Controls.Button(c, "WARP+", "+", new float2(plus, top), new float2(plus + side, top + ButtonHeight)))
 			GameActions.WarpFaster();
 		Controls.EndRegion();
+	}
+
+	// ---- modes --------------------------------------------------------------------------------
+
+	static long _modeChangedAt = long.MinValue;
+
+	/// <summary>The next mode (the P key, and the Mods menu): CLEAN, FLIGHT, FULL, CLEAN...</summary>
+	public static void SetMode(HudMode mode)
+	{
+		Settings.Current.Mode = mode;
+		Settings.Current.Save();
+		_modeChangedAt = Environment.TickCount64;
+	}
+
+	public static void CycleMode() => SetMode(Settings.Current.Mode switch
+	{
+		HudMode.Clean => HudMode.Flight,
+		HudMode.Flight => HudMode.Full,
+		_ => HudMode.Clean,
+	});
+
+	// "FLIGHT MODE" under the clock for a moment after a change, fading out.
+	static void DrawModeToast(Canvas c, float centreX, HudMode mode)
+	{
+		double age = (Environment.TickCount64 - _modeChangedAt) / 1000.0;
+		if (age is < 0 or > 1.8)
+			return;
+		byte alpha = (byte)(255 * Math.Clamp((1.8 - age) / 0.5, 0, 1));
+		string text = $"{mode.ToString().ToUpperInvariant()} MODE";
+		float w = c.MeasureText(Fonts.SemiBold, SmallSize + 1, text, tracking: 3);
+		float y = TimeTop + ClockSize + 104; // under the warp row
+		c.FillRect(new float2(centreX - w / 2 - 14, y - 16), new float2(centreX + w / 2 + 14, y + 16), new ImColor8(255, 255, 255, (byte)(alpha * 0.9)), 4);
+		c.Text(Fonts.SemiBold, SmallSize + 1, new float2(centreX, y), Align.Center, new ImColor8(0, 0, 0, alpha), text, tracking: 3, shadow: false);
 	}
 
 	static string FormatSpeed(double speed) => speed switch

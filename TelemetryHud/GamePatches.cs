@@ -38,6 +38,13 @@ static class ModsMenu
 			s.HideStockGauges = hide;
 			s.Save();
 		}
+		if (ImGui.BeginMenu("Telemetry HUD mode"))
+		{
+			foreach (var (label, mode) in ((string, HudMode)[])[("Clean", HudMode.Clean), ("Flight", HudMode.Flight), ("Full", HudMode.Full)])
+				if (ImGui.MenuItem(label, "P", s.Mode == mode))
+					Hud.SetMode(mode);
+			ImGui.EndMenu();
+		}
 		ImGui.EndMenu();
 	}
 }
