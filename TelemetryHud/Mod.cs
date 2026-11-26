@@ -37,11 +37,9 @@ public class TelemetryHud
 	[StarMapAfterGui]
 	public void AfterGui(double dt)
 	{
-		// Only in flight view: not in the editor, not in map view.
+		// In flight and in map view (the stock gauges show in both); not in the editor.
 		Vehicle? vehicle = Program.ControlledVehicle;
-		bool inFlight = vehicle != null
-			&& !Program.EditorFlag
-			&& Program.GetController() != Program.GetMapController();
+		bool inFlight = vehicle != null && !Program.EditorFlag;
 		if (!inFlight || !Settings.Current.Enabled)
 		{
 			Hud.Hide();

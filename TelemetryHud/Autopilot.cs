@@ -55,7 +55,7 @@ public static class Autopilot
 	public static float Width => LabelColumn + ButtonsWidth;
 
 	/// <summary>The panel with its top right corner at (right, top), design units.</summary>
-	public static void Draw(Canvas c, float right, float top, Vehicle v)
+	public static float Draw(Canvas c, float right, float top, Vehicle v)
 	{
 		float left = right - Width;
 		bool open = Settings.Current.AutopilotOpen;
@@ -82,6 +82,7 @@ public static class Autopilot
 				y = DrawGroup(c, left, y, group, v) + GroupGap;
 		}
 		Controls.EndRegion();
+		return top + height + 2 * pad + 8;
 	}
 
 	static float PanelHeight()

@@ -28,6 +28,8 @@ public static class Commands
 			["/set?enum=<KSA enum>&value=<name>"] = "a flight computer setting as the stock buttons set it, e.g. enum=FlightComputerAttitudeTrackTarget&value=Prograde, enum=VehicleEngine&value=MainIgnite",
 			["/buttons"] = "TelemetryHud's buttons by id",
 			["/click?button=<id>"] = "click a TelemetryHud button through ImGui's input, as the mouse would",
+			["/burn?dv=<m/s>"] = "a prograde burn at the next apoapsis, selected for editing",
+			["/camera?mode=Orbit|Map|Free|IVA|Fixed"] = "switch the view (map view, flight view...)",
 			["/ui?show=0|1"] = "hide or show the game's whole UI (mods' too)",
 			["/wait?frames=<n>"] = "return after n more frames (default 60)",
 		},
@@ -331,6 +333,28 @@ public static class Commands
 			SyntheticMouse.Active = false;
 		}
 		return new { clicked = id, at = new[] { at.X, at.Y } };
+	}
+
+	// A burn at the next apoapsis, prograde dv m/s, made as the map's context menu makes one
+	// (BurnContextMenu.CreateBurn), and selected for editing.
+	public static object? CreateBurn(double prograde)
+	{
+		var v = Program.ControlledVehicle ?? throw new InvalidOperationException("no controlled vehicle");
+		var patch = v.FlightPlan.Patches.Count > 0 ? v.FlightPlan.Patches[0] : throw new InvalidOperationException("no flight plan");
+		var now = Universe.GetElapsedTime();
+		var start = patch.StartTime > now ? patch.StartTime : now;
+		var at = patch.Orbit.GetNextApoapsisTime(start) ?? throw new InvalidOperationException("no apoapsis ahead");
+		var burn = Burn.Create(patch.Orbit.GetPointAt(at), at.Seconds(), new double3(prograde, 0, 0), patch, v);
+		InputEvents.BurnUpdateBuffer.Add(new InputEvents.BurnUpdateData { FlightComputer = v.FlightComputer, Burn = burn, AddBurn = true });
+		Program.ActiveBurn = burn;
+		return new { burnAt = at.Seconds(), inSeconds = at.Seconds() - now.Seconds(), prograde };
+	}
+
+	public static object? SetCamera(string mode)
+	{
+		var m = Enum.Parse<CameraMode>(mode, ignoreCase: true);
+		Program.SetCameraMode(m);
+		return new { camera = m.ToString() };
 	}
 
 	public static object? ShowUi(bool show)

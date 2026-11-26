@@ -100,6 +100,8 @@ public class Bridge
 				"/mouse" => await Commands.MouseProbe(float.Parse(Arg("x")), float.Parse(Arg("y"))),
 				"/buttons" => await OnGameThread(Commands.ButtonNames),
 				"/click" => await Commands.Click(Arg("button")),
+				"/burn" => await OnGameThread(() => Commands.CreateBurn(double.Parse(Arg("dv")))),
+				"/camera" => await OnGameThread(() => Commands.SetCamera(Arg("mode"))),
 				"/set" => await OnGameThread(() => Commands.SetEnum(Arg("enum"), Arg("value"))),
 				"/console" => await Commands.Console(Arg("cmd")),
 				"/ui" =>await OnGameThread(() => Commands.ShowUi(Arg("show") != "0")),

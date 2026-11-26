@@ -97,8 +97,13 @@ public static class Hud
 		// Staging at the top left, the autopilot at the top right, below the game's menu bar
 		// (a window above ours: it would take their clicks).
 		float panelsTop = c.Units(ImGui.GetFrameHeight()) + 24;
-		Staging.Draw(c, Margin, panelsTop, vehicle);
-		Autopilot.Draw(c, c.Size.X - Margin, panelsTop, vehicle);
+		float leftColumn = Staging.Draw(c, Margin, panelsTop, vehicle);
+		float rightColumn = Autopilot.Draw(c, c.Size.X - Margin, panelsTop, vehicle);
+
+		// Cards that appear when they apply, under the autopilot: the next burn, and in map
+		// view the burn being edited.
+		rightColumn = Burns.DrawControl(c, c.Size.X - Margin, rightColumn, vehicle, t.Now.Seconds());
+		Burns.DrawEditor(c, c.Size.X - Margin, rightColumn, t.Now.Seconds());
 
 		var bars = new List<Bar> { ThrottleBar(t) };
 		foreach (var p in t.Propellants.Take(MaxPropellantBars))

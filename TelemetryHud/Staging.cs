@@ -31,10 +31,10 @@ public static class Staging
 	// Column offsets in a row, from its left edge.
 	const float ColStage = 12, ColDeltaV = 190, ColTwr = 246, ColIsp = 302, ColBurn = 362, ColEnv = 392;
 
-	public static void Draw(Canvas c, float left, float top, Vehicle v)
+	public static float Draw(Canvas c, float left, float top, Vehicle v)
 	{
 		if (v is KittenEva)
-			return;
+			return top;
 		var list = v.Parts.SequenceList;
 		var sequences = list.Sequences;
 		var performance = v.Parts.PerformanceSequences.PerformanceSequences;
@@ -87,6 +87,7 @@ public static class Staging
 			}
 		}
 		Controls.EndRegion();
+		return top + height + 2 * pad + 8;
 	}
 
 	static void DrawRow(Canvas c, float left, float top, Sequence s, SequencePerformance? perf, int next, int active, SequenceList list, PartTree parts)
