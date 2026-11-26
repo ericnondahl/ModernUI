@@ -4,10 +4,18 @@ A Kitten Space Agency UI mod: flight telemetry as flat, black-and-white gauges i
 style of a launch webcast. Thin rings, big numbers, small caps labels. Nothing
 skeuomorphic.
 
-Status: early. Speed and altitude rings in a shaded band at the bottom left, in Barlow,
-sized from the screen height. While the HUD shows, the game's own gauge panels hide;
-**Mods → Telemetry HUD** in the game's menu bar turns either off. See Dev loop for
-screenshots without clicking.
+Status: early. A shaded band along the bottom of the screen in flight:
+
+- **Rings** (left): speed, filling towards circular orbital speed at the current height;
+  altitude, filling towards the top of the atmosphere, then against round heights above.
+- **T+ clock** (centre): from liftoff (the vehicle losing ground contact); a vehicle that
+  never touched the ground counts from when it was made. Held at 00:00:00 on the pad.
+- **Bars** (right): throttle (OFF while no engine burns) and each propellant's fill,
+  summed over the vehicle's tanks as the game's Resources panel does.
+
+While the HUD shows, the game's own gauge panels hide and its console messages fade in
+above the band; **Mods → Telemetry HUD** in the game's menu bar turns either off. Gauges are
+data (`Ring`, `Bar` in `Hud.cs`), so a new one is a list entry.
 
 ## How it works
 

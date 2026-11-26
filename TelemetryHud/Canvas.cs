@@ -43,6 +43,10 @@ public readonly struct Canvas
 		Draw.PathStroke(color, default, Px(thickness));
 	}
 
+	/// <summary>A straight line with square ends.</summary>
+	public void Line(float2 from, float2 to, ImColor8 color, float thickness) =>
+		Draw.AddLine(Px(from), Px(to), color, Px(thickness));
+
 	/// <summary>A vertical gradient across the full width, from top colour to bottom colour.</summary>
 	public void VerticalGradient(float top, float bottom, ImColor8 topColor, ImColor8 bottomColor)
 	{
@@ -78,7 +82,7 @@ public readonly struct Canvas
 	/// middle of whatever they are centred on, which ImGui's top-of-line position doesn't do.
 	/// </summary>
 	public void Text(string fontName, float size, float2 at, Align align, ImColor8 color, string text,
-		float tracking = 0, bool tabular = false)
+		float tracking = 0, bool tabular = false, bool shadow = true)
 	{
 		var font = Fonts.Get(fontName);
 		float px = Px(size);
@@ -95,12 +99,18 @@ public readonly struct Canvas
 			char c = text[i];
 			float advance = Advance(font, px, c);
 			float cell = tabular && char.IsAsciiDigit(c) ? digit : advance;
-			Draw.AddText(font, px, new float2(x + (cell - advance) / 2, y), color, Span(ref c));
+			var glyphAt = new float2(x + (cell - advance) / 2, y);
+			// A soft shadow a little below each glyph keeps text legible over bright cloud.
+			if (shadow)
+				Draw.AddText(font, px, glyphAt + new float2(0, Px(ShadowOffset)), Shadow, Span(ref c));
+			Draw.AddText(font, px, glyphAt, color, Span(ref c));
 			x += cell + Px(tracking);
 		}
 	}
 
 	public const float CapHeight = 0.7f;
+	const float ShadowOffset = 1.5f;
+	static readonly ImColor8 Shadow = new(0, 0, 0, 120);
 
 	static float Advance(ImFontPtr font, float px, char c) =>
 		font.CalcTextSizeA(px, float.MaxValue, 0, Span(ref c)).X;

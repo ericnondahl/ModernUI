@@ -81,3 +81,20 @@ public static class Fonts
 	public static ImFontPtr Get(string name) =>
 		FontManager.Fonts.TryGetValue(name, out var font) ? font : ImGui.GetFont();
 }
+
+/// <summary>
+/// The game's console shows its latest messages fading at the bottom of the screen, over
+/// the HUD's band. While the HUD shows and the console is closed, it gets a viewport that
+/// stops above the band, so the messages fade in above it instead. An open console (the \
+/// key) is left as it is.
+/// </summary>
+[HarmonyPatch(typeof(Brutal.ImGuiApi.Abstractions.ConsoleWindow), nameof(Brutal.ImGuiApi.Abstractions.ConsoleWindow.Draw),
+	[typeof(Brutal.Numerics.float2), typeof(Brutal.Numerics.float2), typeof(float), typeof(bool)])]
+static class ConsoleAboveHud
+{
+	static void Prefix(Brutal.ImGuiApi.Abstractions.ConsoleWindow __instance, ref Brutal.Numerics.float2 viewportSize)
+	{
+		if (Hud.Showing && !__instance.IsOpen)
+			viewportSize.Y = Math.Max(viewportSize.Y - Hud.ReservedPixels, 0);
+	}
+}
