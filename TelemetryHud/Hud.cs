@@ -98,6 +98,7 @@ public static class Hud
 		// (a window above ours: it would take their clicks).
 		float panelsTop = c.Units(ImGui.GetFrameHeight()) + 24;
 		float leftColumn = Staging.Draw(c, Margin, panelsTop, vehicle);
+		leftColumn = Crew.Draw(c, Margin, leftColumn, vehicle, t.Now);
 		float rightColumn = Autopilot.Draw(c, c.Size.X - Margin, panelsTop, vehicle);
 
 		// Cards that appear when they apply, under the autopilot: the next burn, and in map

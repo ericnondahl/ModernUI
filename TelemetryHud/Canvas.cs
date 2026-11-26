@@ -42,6 +42,9 @@ public readonly struct Canvas
 
 	public float Px(float units) => units * _scale;
 
+	/// <summary>Design units to ImGui units.</summary>
+	public float Scale => _scale;
+
 	/// <summary>An ImGui length in design units.</summary>
 	public float Units(float imgui) => imgui / _scale;
 	public float2 Px(float2 units) => units * _scale;
@@ -62,13 +65,16 @@ public readonly struct Canvas
 	public void FillCircle(float2 centre, float radius, ImColor8 color) =>
 		Draw.AddCircleFilled(Px(centre), Px(radius), color, Segments(radius));
 
-	int Segments(float radius) => Math.Clamp((int)(Px(radius) * 0.6f), 12, 128);
+	int Segments(float radius) => Math.Clamp((int)(Px(radius) * 1.2f), 32, 128);
 
 	public void Rect(float2 min, float2 max, ImColor8 color, float thickness, float rounding = 0) =>
 		Draw.AddRect(Px(min), Px(max), color, Px(rounding), default, Px(thickness));
 
 	public void FillRect(float2 min, float2 max, ImColor8 color, float rounding = 0) =>
 		Draw.AddRectFilled(Px(min), Px(max), color, Px(rounding));
+
+	public void FillTriangle(float2 a, float2 b, float2 c, ImColor8 color) =>
+		Draw.AddTriangleFilled(Px(a), Px(b), Px(c), color);
 
 	public void Triangle(float2 a, float2 b, float2 c, ImColor8 color, float thickness) =>
 		Draw.AddTriangle(Px(a), Px(b), Px(c), color, Px(thickness));
