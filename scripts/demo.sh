@@ -21,6 +21,20 @@ rm -rf "$CLIPS"; mkdir -p "$CLIPS"
 exec 3>"$OUT/demo-trace.log"; BASH_XTRACEFD=3; set -x
 
 call() { "$D" call "$@" >/dev/null; }
+
+# ensure_closed <setting> <button>: clicks the panel's toggle until its saved state says
+# closed (a single click right after a recording sometimes doesn't land).
+SETTINGS=""
+ensure_closed() {
+  for _ in 1 2 3 4; do
+    [[ -z $SETTINGS ]] && SETTINGS=$(ls -d "$HOME/Library/Application Support/Borea/Instances/"*/ModernUI/settings.json 2>/dev/null | head -1)
+    if [[ -n $SETTINGS ]] && python3 -I -c "import json,sys; sys.exit(0 if not json.load(open(sys.argv[1])).get(sys.argv[2]) else 1)" "$SETTINGS" "$1"; then
+      return 0
+    fi
+    click "$2" || true
+    sleep 0.5
+  done
+}
 click() { call click --data-urlencode "button=$1"; }
 key() { call key --data-urlencode "name=$1"; }
 
@@ -55,7 +69,8 @@ rec 2-liftoff 15
 sleep 1; click STAGE
 sleep 1.5; click IGNITE
 done_rec
-click STAGING; click CREW
+ensure_closed StagingOpen STAGING
+ensure_closed CrewOpen CREW
 
 rec 3-ascent 10
 sleep 1; key P; sleep 0.15; key P          # FLIGHT -> FULL -> CLEAN
