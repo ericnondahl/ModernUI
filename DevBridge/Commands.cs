@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Brutal.Numerics;
@@ -23,6 +22,7 @@ public static class Commands
 			["/newgame"] = "a fresh world: clock at zero, no vehicles",
 			["/launch?vehicle=<save>&site=<id>"] = "put a vehicle save on a launch site of the home body and control it, e.g. site=CCSFS LC-39A",
 			["/fly?alt=<m>&speed=<m/s>"] = "teleport the controlled vehicle onto a vertical climb through that altitude; without speed, a circular orbit",
+			["/console?cmd=<line>"] = "run a game console command (simspeed, refill, loadvehicle, control, exit, ...) and return its output",
 			["/ui?show=0|1"] = "hide or show the game's whole UI (mods' too)",
 			["/wait?frames=<n>"] = "return after n more frames (default 60)",
 		},
@@ -122,20 +122,27 @@ public static class Commands
 		return new { ok = true };
 	}
 
-	static LookupCollection<VehicleSave> Saves()
-	{
-		// The game keeps its vehicle saves in a private property.
-		VehicleSaves.Refresh();
-		return typeof(VehicleSaves).GetProperty("Saves", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)
+	// The player's vehicle saves and the game's default ones (Content/Core/defaultvehicles):
+	// both collections are internal or private, hence reflection.
+	static LookupCollection<VehicleSave> SavesOf(Type owner)
+		=> owner.GetProperty("Saves", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)
 			?.GetValue(null) as LookupCollection<VehicleSave>
-			?? throw new MissingMemberException("VehicleSaves.Saves is gone; KSA changed");
+			?? throw new MissingMemberException($"{owner.Name}.Saves is gone; KSA changed");
+
+	static IEnumerable<VehicleSave> Saves()
+	{
+		VehicleSaves.Refresh();
+		foreach (var save in SavesOf(typeof(VehicleSaves)).AsSpan().ToArray())
+			yield return save;
+		foreach (var save in SavesOf(typeof(DefaultVehicleSaves)).AsSpan().ToArray())
+			yield return save;
 	}
 
 	public static object? VehicleSaveNames()
 	{
 		var names = new List<string>();
-		foreach (var save in (IEnumerable)Saves())
-			names.Add(save?.GetType().GetProperty("Name")?.GetValue(save)?.ToString() ?? save?.ToString() ?? "?");
+		foreach (var save in Saves())
+			names.Add(save.Id);
 		return new { vehicles = names };
 	}
 
@@ -147,8 +154,8 @@ public static class Commands
 		if (system.HomeBody is not Celestial body)
 			throw new InvalidOperationException("no home body");
 		var site = body.GetLocation(siteId) ?? throw new ArgumentException($"'{body.Id}' has no site '{siteId}'");
-		if (!Saves().TryGet(name, out var save) || save == null)
-			throw new ArgumentException($"no vehicle save '{name}'; see /vehicles");
+		var save = Saves().FirstOrDefault(s => s.Id == name)
+			?? throw new ArgumentException($"no vehicle save '{name}'; see /vehicles");
 
 		var tree = save.Load(Program.MainViewport) ?? throw new InvalidOperationException($"'{name}' did not load");
 		var mass = tree.ComputeInertMassPropertiesAsmb() + tree.ComputePropellantMassPropertiesAsmb();
@@ -184,6 +191,42 @@ public static class Commands
 		var orbit = Orbit.CreateFromStateCci(body, Universe.GetNextSimStep().NextTime, positionCci, velocityCci, new Random(1).RandomColor());
 		InputEvents.TeleportInputBuffer.Add(new InputEvents.TeleportInputData { Vehicle = v, Orbit = orbit });
 		return new { vehicle = v.Id, altitude, speed = climb };
+	}
+
+	// ---- the game's own console ------------------------------------------------------
+
+	// Runs a line in the game's console (the ~ window): every [TerminalAction] the game
+	// registers, e.g. "simspeed 10", "refill Rocket", "loadvehicle <name>", "control <id>",
+	// "defaultvehiclesavefiles", "exit". Commands print to the game's log, so the answer is
+	// what the log gained while the command ran.
+	public static async Task<object?> Console(string line)
+	{
+		string? log = GameLog();
+		long start = log != null ? new FileInfo(log).Length : 0;
+		var ok = await Bridge.OnGameThread(() => Program.TerminalInterface.Execute(line));
+		await WaitFrames(10);
+		await Task.Delay(250); // the log writer runs on a thread of its own
+		var output = new List<string>();
+		if (log != null)
+		{
+			using var stream = new FileStream(log, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+			stream.Seek(start, SeekOrigin.Begin);
+			using var reader = new StreamReader(stream);
+			while (reader.ReadLine() is { } l)
+				output.Add(Ansi.Replace(l, ""));
+		}
+		return new { ok, output };
+	}
+
+	static readonly System.Text.RegularExpressions.Regex Ansi = new(@"\x1b\[[0-9;]*m");
+
+	// The newest KittenSpaceAgency.*.log in the profile's logs folder: this run's.
+	static string? GameLog()
+	{
+		var dir = Path.Combine(Constants.DocumentsFolderPath, "logs");
+		return Directory.Exists(dir)
+			? new DirectoryInfo(dir).GetFiles("KittenSpaceAgency.*.log").OrderByDescending(f => f.LastWriteTimeUtc).FirstOrDefault()?.FullName
+			: null;
 	}
 
 	public static object? ShowUi(bool show)

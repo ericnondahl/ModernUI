@@ -90,7 +90,8 @@ public class Bridge
 				"/newgame" => await OnGameThread(Commands.NewGame),
 				"/launch" => await OnGameThread(() => Commands.Launch(Arg("vehicle"), Arg("site"))),
 				"/fly" => await OnGameThread(() => Commands.Fly(double.Parse(Arg("alt")), query["speed"] is { } s ? double.Parse(s) : null)),
-				"/ui" => await OnGameThread(() => Commands.ShowUi(Arg("show") != "0")),
+				"/console" => await Commands.Console(Arg("cmd")),
+				"/ui" =>await OnGameThread(() => Commands.ShowUi(Arg("show") != "0")),
 				"/wait" => await Commands.WaitFrames(int.TryParse(query["frames"], out var n) ? n : 60),
 				_ => throw new KeyNotFoundException($"no command {context.Request.Url.AbsolutePath}; GET / lists them"),
 			};

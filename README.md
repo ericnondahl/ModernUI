@@ -50,22 +50,29 @@ the DLL loaded.
 instance. `scripts/dev.sh` wraps it:
 
 ```sh
-scripts/dev.sh restart              # quit, build both mods, start the test instance, wait until ready
-scripts/dev.sh call vehicles        # vehicle saves to launch
-scripts/dev.sh flight 12000 800     # new game, vehicle on the pad, then 12 km climbing at 800 m/s
-scripts/dev.sh shot hud             # PNG of the next frame, UI included -> screenshots/hud-<time>.png
-scripts/dev.sh call status          # flight state, altitude, speed
+scripts/dev.sh restart                    # quit, build both mods, start the test instance (~5 s warm, ~1 min cold)
+scripts/dev.sh flight 12000 800           # the start rocket to 12 km, climbing at 800 m/s
+scripts/dev.sh flight 300000              # ...or into a 300 km orbit
+KSA_VEHICLE=Hunter scripts/dev.sh flight  # new game, the Hunter on the pad (KSA_SITE, default "CCSFS LC-39A")
+scripts/dev.sh shot hud                   # PNG of the next frame, UI included -> screenshots/hud-<time>.png
+scripts/dev.sh call status                # flight state, altitude, speed
+scripts/dev.sh call vehicles              # vehicles to launch (yours and the defaults)
+scripts/dev.sh console simspeed 10        # any game console command, with its log output
 ```
 
 - **Screenshots** use the Mac port's driver (`ksaMtlScreenshot`): the frame as presented,
-  HUD included. Each one gets a new file name.
+  HUD included. Each one gets a new file name. Takes about 0.2 s.
 - **World commands** (`newgame`, `launch`, `fly`) are adapted from the port's benchmark
   (MIT). They run on the game's thread, after `Program.OnFrame`.
-- **The window:** `restart` puts the test instance in a half-size, always-on-top window
-  at the bottom right, and keeps the display awake while it runs. macOS gives a window
-  nobody can see almost no frames, so a full-screen game in another Space stalls, and so
-  does a game behind a **locked screen or a sleeping display**. Only the test instance's
-  settings change; your own game's don't.
+- **Console** runs the game's own console commands (`[TerminalAction]`s: `simspeed`,
+  `refill`, `control`, `loadvehicle`, `exit`, ...) and returns what they logged.
+- **The test instance's settings**, which `restart` sets: a half-size, always-on-top window
+  at the bottom right of the main screen; no CONFIGURATION screen, changelog or update
+  check at start, so the game goes straight to its start situation (a Testing game, a
+  rocket in orbit). Your own game's settings don't change.
+- **Why the window:** macOS gives a window nobody can see almost no frames, so a
+  full-screen game in another Space stalls, and so does a game behind a **locked screen
+  or a sleeping display**. `restart` keeps the display awake while the game runs.
 
 ## References
 

@@ -3,9 +3,11 @@
 # flight and take screenshots, through the DevBridge mod's HTTP server.
 #
 #   scripts/dev.sh restart            quit the game, build both mods, start the game, wait for the bridge
-#   scripts/dev.sh flight [alt] [v]   new game, launch a vehicle on a pad, optionally teleport to alt/v
+#   scripts/dev.sh flight [alt] [v]   teleport the controlled vehicle to alt (m), climbing at v (m/s),
+#                                     or into orbit without v; KSA_VEHICLE=<save> starts it on a pad first
 #   scripts/dev.sh shot [name]        screenshot into screenshots/<name>-<time>.png, prints the path
-#   scripts/dev.sh call <cmd?args>    any bridge command, e.g. status, vehicles, "fly?alt=5000&speed=300"
+#   scripts/dev.sh call <cmd> [--data-urlencode k=v]  any bridge command: status, vehicles, console, ...
+#   scripts/dev.sh console <line>     a game console command, e.g. "simspeed 10", "defaultvehiclesavefiles"
 #   scripts/dev.sh quit               quit the game
 #   scripts/dev.sh window             (restart does this) the test instance's game in a small
 #                                     always-on-top window, so macOS keeps drawing it
@@ -81,8 +83,8 @@ dev_window() {
   id=$("$BOREA" instance show "$INSTANCE" --json | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["id"])')
   settings="$HOME/Library/Application Support/Borea/Instances/$id/settings.toml"
   [[ -f $settings ]] || die "no settings.toml for instance '$INSTANCE' yet; start it once from Borea"
-  # The main display's size in points ("UI Looks like" of the display marked Main).
-  screen=$(system_profiler SPDisplaysDataType | awk '/UI Looks like:/{s=$4" "$6} /Main Display: Yes/{print s; exit}')
+  # The main screen's size in points (AppKit; needs no permission).
+  screen=$(osascript -l JavaScript -e 'ObjC.import("AppKit"); const s = $.NSScreen.mainScreen.frame.size; s.width + " " + s.height' 2>/dev/null || true)
   python3 -I - "$settings" ${screen:-3440 1440} <<'PY'
 import re, sys
 path, sw, sh = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
@@ -99,6 +101,9 @@ for key, value in values.items():
 open(path, "w").write(head + sep + body + nxt + tail)
 print(f"test instance: {w}x{h} window on top, bottom right of the {sw}x{sh} display")
 PY
+  # Straight into the game: no CONFIGURATION screen (its "Always Show" box), no changelog,
+  # no update check. The game starts with its own start settings (a rocket in orbit).
+  sed -i '' -E 's/^(selectSystemOnStart|displayChangelogOnChange|checkForUpdates) = true/\1 = false/' "$settings"
 }
 
 cmd="${1:-help}"; shift || true
@@ -121,20 +126,20 @@ case "$cmd" in
     call wait --data-urlencode frames=120 >/dev/null
     ;;
   flight)
-    vehicle="${KSA_VEHICLE:-}"
-    if [[ -z $vehicle ]]; then
-      vehicle=$(call vehicles | python3 -I -c 'import json,sys; v=json.load(sys.stdin)["vehicles"]; print(v[0] if v else "")')
-      [[ -n $vehicle ]] || die "no vehicle saves; build one in the editor or set KSA_VEHICLE"
+    # With KSA_VEHICLE (a vehicle save): a new game and that vehicle on KSA_SITE's pad.
+    # Without: the vehicle the game starts with (a rocket in orbit, in a Testing game).
+    if [[ -n ${KSA_VEHICLE:-} ]]; then
+      call newgame >/dev/null
+      call wait --data-urlencode frames=30 >/dev/null
+      call launch --data-urlencode "vehicle=$KSA_VEHICLE" --data-urlencode "site=$SITE"
     fi
-    call newgame >/dev/null
-    call wait --data-urlencode frames=30 >/dev/null
-    call launch --data-urlencode "vehicle=$vehicle" --data-urlencode "site=$SITE"
     if [[ $# -ge 1 ]]; then
       args=(--data-urlencode "alt=$1")
       [[ $# -ge 2 ]] && args+=(--data-urlencode "speed=$2")
       call fly "${args[@]}"
     fi
     call wait --data-urlencode frames=90 >/dev/null
+    call status
     ;;
   shot)
     mkdir -p "$REPO/screenshots"
@@ -143,7 +148,8 @@ case "$cmd" in
     echo "$path"
     ;;
   call) call "$@" ;;
+  console) call console --data-urlencode "cmd=$*" ;;
   quit) quit_game ;;
   window) quit_game; dev_window ;;
-  *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac
