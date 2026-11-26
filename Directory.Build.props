@@ -1,0 +1,12 @@
+<Project>
+  <!--
+    Mac defaults for KSAModTools. Its own defaults are Windows paths, and this file is
+    imported before tooling/msbuild/KsaMod.props, so these win. Override either with the
+    KSA_DIR / KSA_MODS_DIR environment variables.
+
+    On the Mac port, the game's DLLs (KSA.dll, Brutal.*.dll) live inside the app bundle.
+  -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <KSADir Condition="'$(KSADir)' == '' and '$(KSA_DIR)' == ''">$(HOME)/Applications/Kitten Space Agency.app/Contents/Resources/</KSADir>
+  </PropertyGroup>
+</Project>

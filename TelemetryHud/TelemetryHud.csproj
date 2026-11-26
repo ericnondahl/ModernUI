@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\tooling\msbuild\KsaMod.props" />
+
+	<PropertyGroup>
+		<ModName>TelemetryHud</ModName>
+		<VersionPrefix>0.1.0</VersionPrefix>
+		<AssemblyVersion>0.1.0.0</AssemblyVersion>
+
+		<Company></Company>
+		<Authors></Authors>
+		<Description>Minimal black-and-white telemetry gauges for flight.</Description>
+		<Copyright>MIT</Copyright>
+	</PropertyGroup>
+
+	<Import Project="..\tooling\msbuild\KsaMod.targets" />
+</Project>
