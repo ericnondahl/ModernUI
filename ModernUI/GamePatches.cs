@@ -128,3 +128,13 @@ static class AlertsBelowTime
 			cursorY = Hud.AlertsTop;
 	}
 }
+
+/// <summary>
+/// The game's crew clock box hides while the HUD shows: FleetClock shows the same deadlines
+/// in the HUD's style (the crew line, a tag under the time when one is near, the crew card).
+/// </summary>
+[HarmonyPatch(typeof(CrewClock), nameof(CrewClock.Draw))]
+static class HideCrewClock
+{
+	static bool Prefix() => !(Hud.Showing && Settings.Current.HideStockGauges);
+}

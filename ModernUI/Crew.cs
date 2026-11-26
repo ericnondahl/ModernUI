@@ -91,7 +91,9 @@ public static class Crew
 			_moving = null;
 		float seatsHeight = moving.Seat != null ? ButtonRow + 22 : 0;
 		const float systemsHeight = 2 * 44;
-		float height = 28 + facesHeight + seatsHeight + systemsHeight;
+		int fleet = FleetClock.ListHeightRows(FleetRows);
+		float fleetHeight = fleet > 0 ? 18 + fleet * (FleetClock.RowHeight + 4) + 6 : 0;
+		float height = 28 + facesHeight + seatsHeight + systemsHeight + fleetHeight;
 		float right = left + Width;
 		Controls.BeginRegion(c, "crew", new float2(left, top), new float2(right, top + height));
 		c.FillRect(new float2(left - Pad, top - Pad), new float2(right + Pad, top + height + Pad), Backing, 6);
@@ -169,11 +171,15 @@ public static class Crew
 				c.FillRect(new float2(x - 4, ry + 20), new float2(x + colWidth - 12, ry + 40), new ImColor8(255, 255, 255, 230), 3);
 			c.Text(Fonts.SemiBold, SmallSize + 2, new float2(x, ry + 30), Align.Left, alert ? new ImColor8(0, 0, 0, 255) : White, value, tabular: true, shadow: !alert);
 		}
+
+		// Every vessel's next crew deadline (the game's crew clock, opened).
+		FleetClock.DrawList(c, left, y + systemsHeight + 2, Width, FleetRows);
 		Controls.EndRegion();
 		return top + height + 2 * Pad + 8;
 	}
 
 	const float ButtonRow = 28;
+	const int FleetRows = 5;
 
 	/// <summary>The kitten whose seat picker is open (MOVE).</summary>
 	static KeyHash? _moving;
@@ -300,7 +306,9 @@ public static class Crew
 			DrawCat(c, new float2(x + mini / 2, cy - 1), mini, k.Name, face);
 			x += mini + 6;
 		}
-		string summary = alerts.Count == 0 ? "ALL WELL" : alerts.Count == 1 ? alerts[0] : $"{alerts[0]}  +{alerts.Count - 1}";
+		string summary = alerts.Count == 0
+			? FleetClock.Soonest() is { } next ? $"ALL WELL · {next}" : "ALL WELL"
+			: alerts.Count == 1 ? alerts[0] : $"{alerts[0]}  +{alerts.Count - 1}";
 		if (alerts.Count > 0)
 		{
 			float w = c.MeasureText(Fonts.SemiBold, SmallSize, summary, tracking: 1.4f);

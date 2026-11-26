@@ -72,6 +72,7 @@ public static class Hud
 		Controls.BeginFrame();
 		var mode = Settings.Current.Mode;
 		bool clean = mode == HudMode.Clean, full = mode == HudMode.Full;
+		FleetClock.Update();
 		c.VerticalGradient(c.Size.Y - Band, c.Size.Y, Clear, Shade);
 
 		// Everything lines up on two rows: the rings' centre line and the labels' line.
@@ -102,14 +103,13 @@ public static class Hud
 
 		// Time at the top centre: T+, universal time, the warp control.
 		DrawTime(c, c.Size.X / 2, t, clean);
-		// Under the time block and the mode label's place.
-		AlertsTop = c.Px(TimeTop + ClockSize + 128);
-		// The game's crew clock (the soonest life support deadline, any vessel) hangs under
-		// the stock time gauge, which is hidden; it hangs under ours instead.
-		const float anchorWidth = 400;
-		KSA.CrewClock.SetAnchor(c.Px(new float2(c.Size.X / 2 - anchorWidth / 2, TimeTop)),
-			c.Px(new float2(anchorWidth, ClockSize + 124)));
-		DrawModeToast(c, c.Size.X / 2, mode);
+		// Under it, in every mode: a near crew deadline, and the way back to a vessel left.
+		float underTime = TimeTop + ClockSize + (clean ? 16 : 72);
+		float below = FleetClock.DrawUnderClock(c, c.Size.X / 2, underTime);
+		float toastY = Math.Max(TimeTop + ClockSize + 104, below + 22);
+		DrawModeToast(c, c.Size.X / 2, mode, toastY);
+		// The game's alerts start under all that and the mode label's place.
+		AlertsTop = c.Px(toastY + 24);
 
 		// Staging at the top left, the autopilot at the top right, below the game's menu bar
 		// (a window above ours: it would take their clicks).
@@ -393,7 +393,7 @@ public static class Hud
 	});
 
 	// "FLIGHT MODE" under the clock for a moment after a change, fading out.
-	static void DrawModeToast(Canvas c, float centreX, HudMode mode)
+	static void DrawModeToast(Canvas c, float centreX, HudMode mode, float y)
 	{
 		double age = (Environment.TickCount64 - _modeChangedAt) / 1000.0;
 		if (age is < 0 or > 1.8)
@@ -401,7 +401,6 @@ public static class Hud
 		byte alpha = (byte)(255 * Math.Clamp((1.8 - age) / 0.5, 0, 1));
 		string text = $"{mode.ToString().ToUpperInvariant()} MODE";
 		float w = c.MeasureText(Fonts.SemiBold, SmallSize + 1, text, tracking: 3);
-		float y = TimeTop + ClockSize + 104; // under the warp row
 		c.FillRect(new float2(centreX - w / 2 - 14, y - 16), new float2(centreX + w / 2 + 14, y + 16), new ImColor8(255, 255, 255, (byte)(alpha * 0.9)), 4);
 		c.Text(Fonts.SemiBold, SmallSize + 1, new float2(centreX, y), Align.Center, new ImColor8(0, 0, 0, alpha), text, tracking: 3, shadow: false);
 	}

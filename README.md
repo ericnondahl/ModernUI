@@ -25,7 +25,8 @@ game's hide-UI key) hides it too.
 | Bottom right | Delta-v, TWR, next stage; IGNITE SHUTDOWN STAGE RCS (on EVA: DIRECT VIEW RCS MANUAL RATE); throttle and propellant bars | EngineControl, KittenFlightControl, Resources |
 | Top centre | T+ (from liftoff), universal time, vehicle; warp slower / real time / faster | GameTime |
 | Top left | Staging: per stage delta-v, TWR, Isp, burn time, ATM/VAC; total; RESOURCES | Sequence |
-| Top left | Crew as wireframe cats (blinking, squinting when unwell, crossed out when lost), doses, EVA and MOVE; power, life support, dose rate here and over the orbit | CrewPortraits, Radiation, Resources |
+| Top left | Crew as wireframe cats (blinking, squinting when unwell, crossed out when lost), doses, EVA and MOVE; power, life support, dose rate here and over the orbit; every vessel's next crew deadline, a click away | CrewPortraits, Radiation, Resources, the crew clock |
+| Under the time, when it applies | A near crew deadline (under 12 hours, or past "low"), and BACK TO the vessel you switched from | the crew clock |
 | Top right | Autopilot: every mode, hold, target, thrust mode, profile, roll | AutopilotSettings |
 | Top right, when they apply | Next burn (AUTO WARP DELETE POS NEG HOLD); target (distance, speed, closest approach; TOWARD ANTI-VEL AWAY ALIGN HOLD CLEAR); in map view the burn editor (prograde / normal / radial, time, orbits, step, dose after) | BurnControl, RendezvousControl, Burn |
 
