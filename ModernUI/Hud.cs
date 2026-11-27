@@ -57,7 +57,11 @@ public static class Hud
 	const float BarRowGap = 42;
 	const int MaxPropellantBars = 4;
 
-	public static void Hide() => Showing = false;
+	public static void Hide()
+	{
+		Showing = false;
+		Staging.Reset();
+	}
 
 	// Orbit block (apoapsis and periapsis) and the engine deck, between the rings, the
 	// navball and the bars.
@@ -115,7 +119,9 @@ public static class Hud
 		// (a window above ours: it would take their clicks).
 		// (None of it in CLEAN mode; all of it open in FULL.)
 		float panelsTop = c.Units(ImGui.GetFrameHeight()) + 24;
-		if (!clean)
+		if (clean)
+			Staging.Reset();
+		else
 		{
 			float leftColumn = Staging.Draw(c, Margin, panelsTop, vehicle, full);
 			Crew.Draw(c, Margin, leftColumn, vehicle, t.Now, full);
@@ -138,6 +144,10 @@ public static class Hud
 		// The engine deck between the navball and the bars.
 		if (!clean)
 			DrawEngine(c, (ballRight + right - BarWidth) / 2, centreY, labelsY, t, vehicle);
+
+		// Over everything: a staging drag in progress, a staging chip's caption.
+		if (!clean)
+			Staging.DrawOverlay(c);
 
 		Controls.EndFrame();
 

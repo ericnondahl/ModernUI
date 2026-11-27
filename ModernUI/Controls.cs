@@ -102,6 +102,22 @@ public static class Controls
 		return clicked && !disabled;
 	}
 
+	/// <summary>
+	/// An invisible hit area over [min, max] (design units) that the caller draws itself:
+	/// hovered and held (pressed, or being dragged) state. Recorded by id like a button.
+	/// Returns true when clicked.
+	/// </summary>
+	public static bool Area(Canvas c, string id, float2 min, float2 max, out bool hovered, out bool held)
+	{
+		var pMin = c.Px(min);
+		ImGui.SetCursorScreenPos(pMin);
+		bool clicked = ImGui.InvisibleButton($"##{id}", c.Px(max - min));
+		hovered = ImGui.IsItemHovered();
+		held = ImGui.IsItemActive();
+		_building[id] = (pMin, pMin + c.Px(max - min));
+		return clicked;
+	}
+
 	/// <summary>Width of a row of equal buttons.</summary>
 	public static float RowWidth(int count, float width, float gap) => count * width + (count - 1) * gap;
 }

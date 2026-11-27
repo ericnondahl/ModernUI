@@ -1,0 +1,57 @@
+CoreCouplingA_Prefab_Decoupler1WA                    stack-decoupler                    STACK DECOUPLER
+CoreCouplingA_Prefab_Decoupler2WA                    stack-decoupler                    STACK DECOUPLER
+CoreCouplingA_Prefab_Decoupler3WA                    stack-decoupler                    STACK DECOUPLER
+CoreCouplingA_Prefab_DecouplerHalfWA                 stack-decoupler                    STACK DECOUPLER
+CoreCouplingA_Prefab_DecouplerQuarterWA              stack-decoupler                    STACK DECOUPLER
+CoreFairingA_Prefab_Interstage1W1HA                  stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage1WHalfHA               stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage1WQuarterHA            stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage2W1HA                  stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage2W2HA                  stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage2WHalfHA               stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage3W1HA                  stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage3W2HA                  stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage3W3HA                  stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage3W3HB                  stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_Interstage3WHalfHA               stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_InterstageBridgeHollow1WHalfWA   stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_InterstageBridgeHollow2W1WA      stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_InterstageBridgeHollow3W2WA      stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_InterstageBridgePetal1WHalfWA    stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_InterstageBridgePetal2W1WA       stack-decoupler                    INTERSTAGE
+CoreFairingA_Prefab_InterstageHalfW1HA               stack-decoupler                    INTERSTAGE
+CorePropulsionA_Prefab_AntimatterRamDriveA           engine                             (named)
+CorePropulsionA_Prefab_EngineA2                      engine                             (named)
+CorePropulsionA_Prefab_EngineA3                      engine                             (named)
+CorePropulsionA_Prefab_EngineA4                      engine                             (named)
+CorePropulsionA_Prefab_EngineA5                      engine                             (named)
+CorePropulsionA_Prefab_EngineA6                      engine                             (named)
+CorePropulsionA_Prefab_FusionTorchDriveA             engine                             (named)
+CorePropulsionA_Prefab_LESA                          solid-motor + stack-decoupler      ESCAPE TOWER
+CorePropulsionA_Prefab_LESSegmentThrustAssemblyA     solid-motor + stack-decoupler      ESCAPE TOWER
+CorePropulsionA_Prefab_SRBA1                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBA2                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBA3                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBA4                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBB1                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBB2                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBB3                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBB4                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBC1                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBC2                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBC3                         solid-motor                        SOLID MOTOR
+CorePropulsionA_Prefab_SRBCSegmentThrustAssemblyA    solid-motor                        SOLID MOTOR
+CorePropulsionC_Prefab_SRBDThrustAssemblyA           solid-motor                        (named)
+CorePropulsionC_Prefab_SRBEThrustAssemblyA           solid-motor                        (named)
+CoreServiceModuleA_Prefab_SetA1SingleA               stack-decoupler                    (named)
+CoreServiceModuleA_Prefab_SetA2DoubleA               stack-decoupler                    (named)
+CoreServiceModuleA_Prefab_SetA3TripleA               stack-decoupler                    (named)
+CoreServiceModuleA_Prefab_SetA4QuadA                 stack-decoupler                    (named)
+CoreStructuralA_Prefab_RadialDecouplerLargeA         radial-decoupler                   RADIAL DECOUPLER
+CoreStructuralA_Prefab_RadialDecouplerSmallA         radial-decoupler                   RADIAL DECOUPLER
+CoreThermalA_Prefab_Heatshield2HalfWFairingA         stack-decoupler                    HEATSHIELD
+CoreThermalA_Prefab_Heatshield2WFairingA             stack-decoupler                    HEATSHIELD
+CoreThermalA_Prefab_Heatshield3WFairingA             stack-decoupler                    HEATSHIELD
+CoreUtilityA_Prefab_ParachuteBayA                    parachute                          (named)
+CoreUtilityA_Prefab_RadialParachuteMediumA           parachute                          (named)
+CoreUtilityA_Prefab_RadialParachuteSmallA            parachute                          (named)

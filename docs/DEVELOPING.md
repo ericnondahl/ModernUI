@@ -86,6 +86,11 @@ scripts/smoke.sh                          # a real launch through the HUD's butt
 scripts/burst.sh tumble 32                # 32 quick shots of the navball, tiled into one contact sheet
 scripts/dev.sh call vehicles              # vehicles to launch (yours and the defaults)
 scripts/dev.sh call click --data-urlencode button=STAGE   # click a HUD button through ImGui
+scripts/dev.sh call drag --data-urlencode "from=STAGE 2 ITEM 0" --data-urlencode "to=STAGE 3 ROW"
+                                          # drag one HUD control onto another (at=top|middle|bottom of it;
+                                          # via=<id>&hold=<s> stops over a control on the way)
+scripts/dev.sh call wheel --data-urlencode "button=STAGE 3 ROW" --data-urlencode dy=1   # mouse wheel over a control
+scripts/dev.sh call hover --data-urlencode "button=STAGE 1 ITEM 1"   # hold the mouse over a control
 scripts/dev.sh call burn --data-urlencode dv=100          # a test burn at the next apoapsis
 scripts/dev.sh call camera --data-urlencode mode=Map      # map view (Orbit: back to flight)
 scripts/dev.sh call target --data-urlencode id=Gemini7    # set a target (empty id clears it)
@@ -116,9 +121,43 @@ target, an EVA), records each phase from the screen (ffmpeg, avfoundation) with 
 cards between them, and writes `demo/ModernUI-demo.mp4` (1080p30). It needs Screen
 Recording permission and the screen unlocked; keep the mouse off the game window.
 
+**Staging video:** `scripts/staging-demo.sh` records the staging list the same way: the
+chips and hover on the pad, fuel draining after liftoff, an action dragged to another
+stage and a stage reordered in flight. It writes `demo/ModernUI-staging.mp4`.
+
 **Navball test:** set `"DebugNavballTumble": true` in the profile's
 `ModernUI/settings.json` and restart: the navball turns through every orientation
 over time, so `scripts/burst.sh` covers hundreds of attitudes in a few seconds.
+
+## Testing a new game build
+
+KSA is in pre-alpha, and each build can rename or move what ModernUI reads. For each new
+build (a daily scheduled check reports one):
+
+1. **Get it running:** download the Linux build from https://ksa.ahwoo.com into
+   `~/Downloads`; run `./port.sh --update` in `~/Downloads/ksa-macos-port` (once a port
+   release names the build). Then `scripts/dev.sh restart` must build and start cleanly.
+2. **The failsafe:** `logs/console.log` should have no `ModernUI:` failsafe lines (a
+   missing patch target, the HUD switched off).
+3. **A flight:** `scripts/smoke.sh` (stage, ignite, climb, shutdown through the HUD), and
+   `scripts/dev.sh gallery <build>` to compare the screens with the last build's.
+4. **Staging parts:** the staging chips come from the game's part data, which changes as
+   parts are added.
+   - Run `scripts/staged-parts.py | diff docs/staged-parts.txt -`. Every difference is a part
+     added, removed or changed. Check that each one's chips and caption name make sense.
+     A `?` is a stageable part with no icon: add it in `Staging.cs` (`KindOf`, `DrawIcon`).
+     Then save the new list over `docs/staged-parts.txt`.
+   - Whether the game has a new kind of stageable module: today they are
+     `EngineController`, `Decoupler`, `ParachuteDeploy` and `ParachuteCut`. List them with
+     `DOTNET_ROOT=~/.dotnet ilspycmd ~/Applications/"Kitten Space Agency.app"/Contents/Resources/KSA.dll | grep -E "class \w+ .*\bISequenced\b"`
+     (about a minute). A new one needs an icon in `Staging.cs` and its part-data element in
+     `scripts/staged-parts.py`.
+   - If the build changes the stock staging panel (`KSA.SequenceList`): `Staging.cs`
+     mirrors its `BuildSequenceActions`, `GetActionIcon` and drag operations
+     (`InputEvents.SequenceOp`); compare them. `scripts/staging-demo.sh` shows staging
+     working end to end.
+5. **Release notes:** update the "Built for KSA" line in the README, the version in
+   `docs/publishing/forum-post.md`, and `game_min` in `docs/publishing/ModernUI.toml`.
 
 ## References
 

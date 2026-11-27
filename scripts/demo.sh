@@ -49,7 +49,7 @@ echo "capturing $crop"
 REC_PID=""
 rec() {
   ffmpeg -hide_banner -loglevel error -y -f avfoundation -framerate 30 -capture_cursor 0 -pixel_format uyvy422 \
-    -i "1:none" -t "$2" -vf "crop=$crop,scale=1920:1080:flags=lanczos,fps=30" \
+    -i "Capture screen 0:none" -t "$2" -vf "crop=$crop,scale=1920:1080:flags=lanczos,fps=30" \
     -c:v h264_videotoolbox -b:v 16M -pix_fmt yuv420p "$CLIPS/$1.mp4" 2>/dev/null &
   REC_PID=$!
   sleep 1   # the capture takes a moment to start
