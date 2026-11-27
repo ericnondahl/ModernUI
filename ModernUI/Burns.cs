@@ -44,7 +44,7 @@ public static class Burns
 
 		// Delta-v to go, big; when, small.
 		float hy = top + RowHeight / 2;
-		c.Text(Fonts.Medium, SmallSize, new float2(left, hy), Align.Left, Dim, "NEXT BURN", tracking: 2.4f);
+		Icons.Label(c, Icon.Burn, new float2(left, hy), Align.Left, Dim, Fonts.Medium, SmallSize, "NEXT BURN", 2.4f);
 		string dv = burn != null ? $"{burn.DeltaVToGoCci.Length():N1}" : "—";
 		c.Text(Fonts.SemiBold, 22, new float2(right - 40, hy), Align.Right, White, dv, tabular: true);
 		c.Text(Fonts.Medium, SmallSize - 3, new float2(right, hy + 2), Align.Right, Dim, "M/S", tracking: 1.2f);
@@ -109,7 +109,7 @@ public static class Burns
 
 		var time = b.ParentDepartureBurn ? b.ParentDepartureTime : b.Time;
 		float hy = top + RowHeight / 2;
-		c.Text(Fonts.Medium, SmallSize, new float2(left, hy), Align.Left, Dim, "EDIT BURN", tracking: 2.4f);
+		Icons.Label(c, Icon.Burn, new float2(left, hy), Align.Left, Dim, Fonts.Medium, SmallSize, "EDIT BURN", 2.4f);
 		c.Text(Fonts.SemiBold, 22, new float2(right - 40, hy), Align.Right, White, $"{b.DeltaVVlf.Length():N1}", tabular: true);
 		c.Text(Fonts.Medium, SmallSize - 3, new float2(right, hy + 2), Align.Right, Dim, "M/S", tracking: 1.2f);
 

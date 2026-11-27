@@ -40,6 +40,9 @@ Press **P** to cycle them, or pick one in **Mods → ModernUI mode** in the game
 hide stock gauges** keeps the stock gauges alongside it. F2, the game's hide-UI key, hides
 it too.
 
+**Mods → ModernUI: section icons** turns off the small icons before each section's label
+(speed, staging, crew, autopilot...).
+
 **Mods → ModernUI colour** draws the whole HUD in amber, orange, cyan, green or pink
 instead of white.
 

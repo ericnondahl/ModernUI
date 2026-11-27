@@ -98,8 +98,8 @@ public static class Crew
 		Controls.BeginRegion(c, "crew", new float2(left, top), new float2(right, top + height));
 		c.FillRect(new float2(left - Pad, top - Pad), new float2(right + Pad, top + height + Pad), Backing, 6);
 
-		c.Text(Fonts.Medium, SmallSize + 1, new float2(left, top + 14), Align.Left, Dim, "CREW", tracking: 2.4f);
-		c.Text(Fonts.SemiBold, SmallSize + 1, new float2(left + 70, top + 14), Align.Left, White, $"{kittens.Count}", tabular: true);
+		Icons.Label(c, Icon.Crew, new float2(left, top + 14), Align.Left, Dim, Fonts.Medium, SmallSize + 1, "CREW", 2.4f);
+		c.Text(Fonts.SemiBold, SmallSize + 1, new float2(left + 70 + Icons.Offset, top + 14), Align.Left, White, $"{kittens.Count}", tabular: true);
 		if (!forceOpen && Controls.Button(c, "CREW", "CLOSE", new float2(right - 64, top), new float2(right, top + 28), lit: true))
 		{
 			Settings.Current.CrewOpen = false;
@@ -298,8 +298,8 @@ public static class Crew
 		Controls.BeginRegion(c, "crew", new float2(left, top), new float2(right, top + height));
 		c.FillRect(new float2(left - Pad, top - Pad), new float2(right + Pad, top + height + Pad), Backing, 6);
 		float cy = top + height / 2;
-		c.Text(Fonts.Medium, SmallSize + 1, new float2(left, cy), Align.Left, Dim, "CREW", tracking: 2.4f);
-		float x = left + 70;
+		Icons.Label(c, Icon.Crew, new float2(left, cy), Align.Left, Dim, Fonts.Medium, SmallSize + 1, "CREW", 2.4f);
+		float x = left + 70 + Icons.Offset;
 		foreach (var (k, _) in kittens.Take(MaxCrew))
 		{
 			var face = k.Kia ? Face.Lost : k.HasRadiationSickness(now) || worried ? Face.Unwell : Face.Well;

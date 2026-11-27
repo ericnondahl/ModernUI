@@ -79,6 +79,12 @@ static class ModsMenu
 			s.HideStockGauges = hide;
 			s.Save();
 		}
+		bool icons = s.SectionIcons;
+		if (ImGui.MenuItem("ModernUI: section icons", default, ref icons))
+		{
+			s.SectionIcons = icons;
+			s.Save();
+		}
 		if (ImGui.BeginMenu("ModernUI mode"))
 		{
 			try

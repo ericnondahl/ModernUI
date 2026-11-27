@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace ModernUI;
 
 /// <summary>A ring gauge: a number in a thin open ring, filled to Fraction (0..1).</summary>
-public readonly record struct Ring(string Label, string Value, string Unit, double Fraction);
+public readonly record struct Ring(Icon Icon, string Label, string Value, string Unit, double Fraction);
 
 /// <summary>A bar gauge: a label and value over a thin bar. Inactive bars draw dimmed.</summary>
 public readonly record struct Bar(string Label, string Value, double Fraction, bool Active = true);
@@ -165,7 +165,7 @@ public static class Hud
 		OrbitRow(c, left, centreY - 40, "AP", t.Apoapsis, t.NextApoapsis, t, v);
 		OrbitRow(c, left, centreY + 22, "PE", t.Periapsis, t.NextPeriapsis, t, v);
 		Controls.EndRegion();
-		c.Text(Fonts.Medium, SmallSize, new float2(left + OrbitWidth / 2, labelsY), Align.Center, Dim, "ORBIT", tracking: Tracking);
+		Icons.Label(c, Icon.Orbit, new float2(left + OrbitWidth / 2, labelsY), Align.Center, Dim, Fonts.Medium, SmallSize, "ORBIT", Tracking);
 	}
 
 	// "AP" over the height; under them the time to it and a WARP button.
@@ -192,18 +192,25 @@ public static class Hud
 	static void DrawEngine(Canvas c, float centreX, float centreY, float labelsY, Telemetry t, KSA.Vehicle v)
 	{
 		// Readouts: three columns.
-		(string Label, string Value)[] readouts =
+		(Icon Icon, string Label, string Value, string Unit)[] readouts =
 		[
-			("DELTA-V  M/S", t.TotalDeltaV > 0 ? $"{t.TotalDeltaV:N0}" : "—"),
-			("TWR", t.ThrustToWeight > 0 ? $"{t.ThrustToWeight:0.0}" : "—"),
-			("STAGE", t.NextStage >= 0 ? $"{t.NextStage}" : "—"),
+			(Icon.DeltaV, "DELTA-V", t.TotalDeltaV > 0 ? $"{t.TotalDeltaV:N0}" : "—", t.TotalDeltaV > 0 ? "M/S" : ""),
+			(Icon.Twr, "TWR", t.ThrustToWeight > 0 ? $"{t.ThrustToWeight:0.0}" : "—", ""),
+			(Icon.Stages, "STAGE", t.NextStage >= 0 ? $"{t.NextStage}" : "—", ""),
 		];
 		const float column = 120;
 		for (int i = 0; i < readouts.Length; i++)
 		{
 			float x = centreX + (i - 1) * column;
-			c.Text(Fonts.Medium, SmallSize, new float2(x, centreY - 34), Align.Center, Dim, readouts[i].Label, tracking: Tracking);
-			c.Text(Fonts.SemiBold, 30, new float2(x, centreY + 4), Align.Center, White, readouts[i].Value, tabular: true);
+			Icons.Label(c, readouts[i].Icon, new float2(x, centreY - 34), Align.Center, Dim, Fonts.Medium, SmallSize, readouts[i].Label, Tracking);
+			// The value with its unit after it, as the orbit block's heights; the pair centred.
+			var (_, _, value, unit) = readouts[i];
+			float valueWidth = c.MeasureText(Fonts.SemiBold, 30, value, tabular: true);
+			float unitWidth = unit.Length > 0 ? 6 + c.MeasureText(Fonts.Medium, SmallSize - 2, unit, tracking: 1.2f) : 0;
+			float valueLeft = x - (valueWidth + unitWidth) / 2;
+			c.Text(Fonts.SemiBold, 30, new float2(valueLeft, centreY + 4), Align.Left, White, value, tabular: true);
+			if (unit.Length > 0)
+				c.Text(Fonts.Medium, SmallSize - 2, new float2(valueLeft + valueWidth + 6, centreY + 7), Align.Left, Dim, unit, tracking: 1.2f);
 		}
 
 		// On EVA the deck is the stock KittenFlightControl: control modes and trim.
@@ -289,7 +296,7 @@ public static class Hud
 
 	// Speed fills towards orbit: circular orbital speed at the vehicle's height.
 	static Ring SpeedRing(Telemetry t) =>
-		new("SPEED", $"{t.SurfaceSpeed:0}", "M/S", t.SurfaceSpeed / t.OrbitalSpeedHere);
+		new(Icon.Speed, "SPEED", $"{t.SurfaceSpeed:0}", "M/S", t.SurfaceSpeed / t.OrbitalSpeedHere);
 
 	// Altitude fills towards the top of the atmosphere while inside it, then against the
 	// next round height above it.
@@ -303,7 +310,7 @@ public static class Hud
 			< 10_000_000 => ($"{alt / 1000:0.0}", "KM"),
 			_ => ($"{alt / 1000:0}", "KM"),
 		};
-		return new("ALTITUDE", value, unit, alt / full);
+		return new(Icon.Altitude, "ALTITUDE", value, unit, alt / full);
 	}
 
 	static Bar ThrottleBar(Telemetry t) => t.EnginesOn
@@ -330,7 +337,7 @@ public static class Hud
 
 		c.Text(Fonts.SemiBold, RingValueSize, centre + new float2(0, -6), Align.Center, White, r.Value, tabular: true);
 		c.Text(Fonts.Medium, SmallSize, centre + new float2(0, 27), Align.Center, Dim, r.Unit, tracking: 1.6f);
-		c.Text(Fonts.Medium, SmallSize, new float2(centre.X, labelsY), Align.Center, Dim, r.Label, tracking: Tracking);
+		Icons.Label(c, r.Icon, new float2(centre.X, labelsY), Align.Center, Dim, Fonts.Medium, SmallSize, r.Label, Tracking);
 	}
 
 	// "T+ 00:01:23" with the vehicle's name under it, centred on the screen.
@@ -363,8 +370,14 @@ public static class Hud
 		var now = t.Now;
 		string ut = $"UT {(int)now.Years}Y {(int)now.Days % 365:000}D {(int)now.Hours % 24:00}:{(int)now.Minutes % 60:00}:{(int)now.Seconds() % 60:00}";
 		float lineY = clockY + ClockSize / 2 + 16;
-		c.Text(Fonts.Medium, SmallSize, new float2(centreX - 12, lineY), Align.Right, Dim, ut, tracking: 1.2f, tabular: true);
-		c.Text(Fonts.Medium, SmallSize, new float2(centreX + 12, lineY), Align.Left, Dim, t.VehicleId.ToUpperInvariant(), tracking: Tracking);
+		// The pair centred under the clock. It only moves when the vessel changes: the time's
+		// digits are tabular, so ticking doesn't change its width.
+		string vehicle = t.VehicleId.ToUpperInvariant();
+		const float pairGap = 24;
+		float utWidth = c.MeasureText(Fonts.Medium, SmallSize, ut, tracking: 1.2f, tabular: true);
+		float lineLeft = centreX - (utWidth + pairGap + c.MeasureText(Fonts.Medium, SmallSize, vehicle, tracking: Tracking)) / 2;
+		c.Text(Fonts.Medium, SmallSize, new float2(lineLeft, lineY), Align.Left, Dim, ut, tracking: 1.2f, tabular: true);
+		c.Text(Fonts.Medium, SmallSize, new float2(lineLeft + utWidth + pairGap, lineY), Align.Left, Dim, vehicle, tracking: Tracking);
 
 		// Warp: [-] [speed] [+]
 		const float side = 32, middle = 110, gap = 4;
