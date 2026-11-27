@@ -7,8 +7,10 @@ namespace ModernUI;
 /// pre-alpha and ModernUI reaches into its internals, so a new build can rename or remove
 /// a method we patch or call. Instead of failing to load or throwing every frame:
 /// - each patch is applied on its own, so a missing target loses only that patch;
-/// - an error while drawing switches the HUD off for the session and brings the stock HUD
-///   back, logged once, and said in the Mods menu, where turning ModernUI on tries again;
+/// - an error while drawing that a game update causes (a missing method, field or type)
+///   switches the HUD off for the session and brings the stock HUD back, logged once, and
+///   said in the Mods menu, where turning ModernUI on tries again. Any other error skips
+///   that frame, logged once per message; only a run of them switches the HUD off;
 /// - a patch whose own work throws stops doing it and leaves the game's behaviour alone.
 /// Everything is written to the game's log (logs/console.log) with a "ModernUI:" prefix.
 /// </summary>
@@ -23,14 +25,15 @@ public static class Failsafe
 	static readonly List<string> Failed = [];
 	static readonly HashSet<string> Reported = [];
 
-	/// <summary>Applies each patch class on its own, as Harmony's PatchAll would, but one at a time.</summary>
+	/// <summary>Applies each patch class on its own: Harmony's PatchAll, one class at a time.</summary>
 	public static void ApplyPatches(Harmony harmony)
 	{
 		foreach (var type in AccessTools.GetTypesFromAssembly(typeof(Failsafe).Assembly))
 		{
 			try
 			{
-				harmony.CreateClassProcessor(type).Patch();
+				if (type.HasHarmonyAttribute())
+					harmony.CreateClassProcessor(type).Patch();
 			}
 			catch (Exception e)
 			{
@@ -41,8 +44,39 @@ public static class Failsafe
 		}
 	}
 
-	/// <summary>Switches the HUD off for the session after an error while drawing; logged once.</summary>
-	public static void Trip(Exception e)
+	/// <summary>Errors in a row (skipped frames) before the HUD switches off: about a second.</summary>
+	const int FramesBeforeTrip = 60;
+	static int _failedFrames;
+
+	public static void FrameSucceeded() => _failedFrames = 0;
+
+	/// <summary>
+	/// An error while drawing. One a game update causes switches the HUD off at once; any
+	/// other (a vehicle gone mid-frame, say) skips the frame, and only a run of them does.
+	/// </summary>
+	public static void FrameFailed(Exception e)
+	{
+		if (BrokenByUpdate(e) || ++_failedFrames >= FramesBeforeTrip)
+		{
+			Trip(e);
+			return;
+		}
+		if (Reported.Count < 100 && Reported.Add("frame: " + Describe(e)))
+			Console.WriteLine($"ModernUI: skipped a frame after an error (logged once).\n{e}");
+	}
+
+	/// <summary>The errors a game that no longer matches ModernUI's build throws.</summary>
+	static bool BrokenByUpdate(Exception? e)
+	{
+		for (; e != null; e = e.InnerException)
+			if (e is MissingMemberException or TypeLoadException or TypeInitializationException
+				or BadImageFormatException or FileNotFoundException or FileLoadException)
+				return true;
+		return false;
+	}
+
+	/// <summary>Switches the HUD off for the session; logged once.</summary>
+	static void Trip(Exception e)
 	{
 		if (Tripped != null)
 			return;
@@ -52,7 +86,11 @@ public static class Failsafe
 	}
 
 	/// <summary>Lets the HUD try again (Mods → ModernUI).</summary>
-	public static void Reset() => Tripped = null;
+	public static void Reset()
+	{
+		Tripped = null;
+		_failedFrames = 0;
+	}
 
 	/// <summary>Logs a patch's error once per patch; the caller then leaves the game's behaviour alone.</summary>
 	public static void Report(string patch, Exception e)

@@ -29,8 +29,7 @@ public class ModernUIMod
 		Failsafe.ApplyPatches(_harmony);
 		// If the game built its fonts before we patched its font manager, add ours now;
 		// later rebuilds go through the patch.
-		if (FontManager.Fonts.Count > 0)
-			Fonts.LoadGuarded();
+		Fonts.LoadGuarded();
 	}
 
 	[StarMapUnload]
@@ -47,14 +46,20 @@ public class ModernUIMod
 		try
 		{
 			Frame();
+			Failsafe.FrameSucceeded();
 		}
 		catch (Exception e)
 		{
-			Controls.Recover();
-			Hud.Hide();
-			Failsafe.Trip(e);
+			// First what can't fail (Failsafe and HudState hold no game types), then the rest.
+			HudState.Showing = false;
+			Failsafe.FrameFailed(e);
+			try { RecoverImGui(); }
+			catch (Exception) { }
 		}
 	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static void RecoverImGui() => Controls.Recover();
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	static void Frame()

@@ -19,14 +19,14 @@ public readonly record struct Bar(string Label, string Value, double Fraction, b
 /// </summary>
 public static class Hud
 {
-	/// <summary>Whether the HUD drew last frame; the stock gauges hide while it does.</summary>
-	public static bool Showing { get; private set; }
+	/// <summary>Whether the HUD drew last frame (kept in HudState, which the patches read).</summary>
+	public static bool Showing { get => HudState.Showing; private set => HudState.Showing = value; }
 
 	/// <summary>Where the game's alerts start, under the time block (ImGui units), as of last frame.</summary>
-	public static float AlertsTop { get; private set; }
+	public static float AlertsTop { get => HudState.AlertsTop; private set => HudState.AlertsTop = value; }
 
 	/// <summary>Height of the screen's bottom strip the HUD uses, in pixels, as of last frame.</summary>
-	public static float ReservedPixels { get; private set; }
+	public static float ReservedPixels { get => HudState.ReservedPixels; private set => HudState.ReservedPixels = value; }
 
 	static readonly ImColor8 White = new(255, 255, 255, 255);
 	static readonly ImColor8 Track = new(255, 255, 255, 46);   // 18%
