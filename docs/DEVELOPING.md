@@ -86,6 +86,9 @@ scripts/smoke.sh                          # a real launch through the HUD's butt
 scripts/burst.sh tumble 32                # 32 quick shots of the navball, tiled into one contact sheet
 scripts/dev.sh call vehicles              # vehicles to launch (yours and the defaults)
 scripts/dev.sh call click --data-urlencode button=STAGE   # click a HUD button through ImGui
+scripts/dev.sh call drag --data-urlencode "from=STAGE 2 ITEM 0" --data-urlencode "to=STAGE 3 ROW"
+                                          # drag one HUD control onto another (at=top|middle|bottom of it)
+scripts/dev.sh call hover --data-urlencode "button=STAGE 1 ITEM 1"   # hold the mouse over a control
 scripts/dev.sh call burn --data-urlencode dv=100          # a test burn at the next apoapsis
 scripts/dev.sh call camera --data-urlencode mode=Map      # map view (Orbit: back to flight)
 scripts/dev.sh call target --data-urlencode id=Gemini7    # set a target (empty id clears it)
@@ -115,6 +118,10 @@ CLEAN mode, upper atmosphere, orbit with the autopilot, a burn planned in map vi
 target, an EVA), records each phase from the screen (ffmpeg, avfoundation) with title
 cards between them, and writes `demo/ModernUI-demo.mp4` (1080p30). It needs Screen
 Recording permission and the screen unlocked; keep the mouse off the game window.
+
+**Staging video:** `scripts/staging-demo.sh` records the staging list the same way: the
+chips and hover on the pad, fuel draining after liftoff, an action dragged to another
+stage and a stage reordered in flight. It writes `demo/ModernUI-staging.mp4`.
 
 **Navball test:** set `"DebugNavballTumble": true` in the profile's
 `ModernUI/settings.json` and restart: the navball turns through every orientation
