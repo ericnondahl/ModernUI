@@ -22,17 +22,47 @@ static class HideStockGauges
 [HarmonyPatch(typeof(Program), nameof(Program.DrawProgramMenusHook))]
 static class ModsMenu
 {
+	static bool _broken;
+
 	static void Postfix()
 	{
-		if (!ImGui.BeginMenu("Mods"))
+		if (_broken || !ImGui.BeginMenu("Mods"))
 			return;
+		try
+		{
+			Items();
+		}
+		catch (Exception e)
+		{
+			_broken = true;
+			Failsafe.Report(nameof(ModsMenu), e);
+		}
+		finally
+		{
+			ImGui.EndMenu();
+		}
+	}
+
+	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+	static void Items()
+	{
 		var s = Settings.Current;
-		bool enabled = s.Enabled, hide = s.HideStockGauges;
+		// Off after an error (see Failsafe): unticked, and ticking it tries again.
+		bool enabled = s.Enabled && Failsafe.Tripped == null, hide = s.HideStockGauges;
 		if (ImGui.MenuItem("ModernUI", default, ref enabled))
 		{
+			if (Failsafe.Tripped != null)
+			{
+				Failsafe.Reset();
+				enabled = true;
+			}
 			s.Enabled = enabled;
 			s.Save();
 		}
+		if (Failsafe.Tripped != null)
+			ImGui.TextDisabled($"  Off after an error, probably a game update (see logs/console.log)");
+		else if (Failsafe.FailedPatches.Count > 0)
+			ImGui.TextDisabled($"  Partly working after a game update: {string.Join(", ", Failsafe.FailedPatches)} off");
 		if (ImGui.MenuItem("ModernUI: hide stock gauges", default, ref hide))
 		{
 			s.HideStockGauges = hide;
@@ -40,12 +70,17 @@ static class ModsMenu
 		}
 		if (ImGui.BeginMenu("ModernUI mode"))
 		{
-			foreach (var (label, mode) in ((string, HudMode)[])[("Clean", HudMode.Clean), ("Flight", HudMode.Flight), ("Full", HudMode.Full)])
-				if (ImGui.MenuItem(label, "P", s.Mode == mode))
-					Hud.SetMode(mode);
-			ImGui.EndMenu();
+			try
+			{
+				foreach (var (label, mode) in ((string, HudMode)[])[("Clean", HudMode.Clean), ("Flight", HudMode.Flight), ("Full", HudMode.Full)])
+					if (ImGui.MenuItem(label, "P", s.Mode == mode))
+						Hud.SetMode(mode);
+			}
+			finally
+			{
+				ImGui.EndMenu();
+			}
 		}
-		ImGui.EndMenu();
 	}
 }
 
@@ -65,9 +100,23 @@ public static class Fonts
 
 	public static string ModDirectory = "";
 
-	static void Postfix() => Load();
+	static void Postfix() => LoadGuarded();
 
-	public static void Load()
+	/// <summary>Load, but an error (a changed font loader) leaves the game's fonts in use.</summary>
+	public static void LoadGuarded()
+	{
+		try
+		{
+			Load();
+		}
+		catch (Exception e)
+		{
+			Failsafe.Report(nameof(Fonts), e);
+		}
+	}
+
+	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+	static void Load()
 	{
 		foreach (var name in All)
 		{
@@ -99,11 +148,26 @@ public static class Fonts
 	[typeof(Brutal.Numerics.float2), typeof(Brutal.Numerics.float2), typeof(float), typeof(bool)])]
 static class ConsoleAboveHud
 {
+	static bool _broken;
+
 	static void Prefix(Brutal.ImGuiApi.Abstractions.ConsoleWindow __instance, ref Brutal.Numerics.float2 viewportSize)
 	{
-		if (Hud.Showing && !__instance.IsOpen)
-			viewportSize.Y = Math.Max(viewportSize.Y - Hud.ReservedPixels, 0);
+		if (_broken || !Hud.Showing)
+			return;
+		try
+		{
+			if (!IsOpen(__instance))
+				viewportSize.Y = Math.Max(viewportSize.Y - Hud.ReservedPixels, 0);
+		}
+		catch (Exception e)
+		{
+			_broken = true;
+			Failsafe.Report(nameof(ConsoleAboveHud), e);
+		}
 	}
+
+	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+	static bool IsOpen(Brutal.ImGuiApi.Abstractions.ConsoleWindow console) => console.IsOpen;
 }
 
 /// <summary>
@@ -115,12 +179,14 @@ static class ConsoleAboveHud
 [HarmonyPatch]
 static class AlertsBelowTime
 {
+	// Whichever of the three still exist (a missing one is logged by Harmony's AccessTools).
 	static IEnumerable<System.Reflection.MethodBase> TargetMethods() =>
-	[
-		AccessTools.Method(typeof(LoadAlert), nameof(LoadAlert.DrawList)),
-		AccessTools.Method(typeof(FixedAlert), nameof(FixedAlert.DrawList)),
-		AccessTools.Method(typeof(TimedAlert), nameof(TimedAlert.DrawList)),
-	];
+		new[]
+		{
+			AccessTools.Method(typeof(LoadAlert), nameof(LoadAlert.DrawList)),
+			AccessTools.Method(typeof(FixedAlert), nameof(FixedAlert.DrawList)),
+			AccessTools.Method(typeof(TimedAlert), nameof(TimedAlert.DrawList)),
+		}.Where(m => m != null)!;
 
 	static void Prefix(ref float cursorY)
 	{

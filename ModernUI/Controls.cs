@@ -41,9 +41,30 @@ public static class Controls
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, new float2(1, 1));
 		ImGui.Begin($"##ModernUI.{id}", RegionFlags);
 		ImGui.PopStyleVar(3);
+		_openRegions++;
 	}
 
-	public static void EndRegion() => ImGui.End();
+	public static void EndRegion()
+	{
+		ImGui.End();
+		_openRegions--;
+	}
+
+	static int _openRegions;
+
+	/// <summary>
+	/// After an error part-way through a frame: closes the regions it left open, so ImGui's
+	/// window stack is balanced when the game ends the frame. (BeginRegion pushes and pops its
+	/// style itself, and regions are the only thing the HUD begins.)
+	/// </summary>
+	public static void Recover()
+	{
+		for (; _openRegions > 0; _openRegions--)
+		{
+			try { ImGui.End(); }
+			catch (Exception) { _openRegions = 0; break; }
+		}
+	}
 
 	static readonly ImColor8 Ink = new(0, 0, 0, 255);
 	static readonly ImColor8 Paper = new(255, 255, 255, 235);
