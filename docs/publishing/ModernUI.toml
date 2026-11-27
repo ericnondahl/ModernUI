@@ -43,7 +43,7 @@ github = "ericnondahl/ModernUI"
 
 [links]
 # Required: the Ahwoo forums thread announcing ModernUI (Mod Releases, User Interface).
-forums = "https://forums.ahwoo.com/threads/REPLACE-WITH-THREAD"
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/modernui-0-1-0-a-launch-webcast-style-flight-hud.1821/"
 repository = "https://github.com/ericnondahl/ModernUI"
 bugtracker = "https://github.com/ericnondahl/ModernUI/issues"
 
