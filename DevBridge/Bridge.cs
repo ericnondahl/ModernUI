@@ -103,6 +103,7 @@ public class Bridge
 				"/drag" => await Commands.Drag(Arg("from"), Arg("to"), query["at"] ?? "middle", int.TryParse(query["steps"], out var st) ? st : 20, query["via"], float.TryParse(query["hold"], out var hd) ? hd : 1),
 				"/wheel" => await Commands.Wheel(Arg("button"), float.TryParse(query["dy"], out var wy) ? wy : 1),
 				"/hover" => await Commands.Hover(Arg("button"), float.TryParse(query["seconds"], out var hs) ? hs : 1),
+				"/point" => await Commands.Point(float.Parse(Arg("x")), float.Parse(Arg("y")), query["click"] == "1", float.TryParse(query["seconds"], out var ps) ? ps : 0),
 				"/burn" => await OnGameThread(() => Commands.CreateBurn(double.Parse(Arg("dv")))),
 				"/target" => await OnGameThread(() => Commands.SetTarget(query["id"] ?? "")),
 				"/key" => await Commands.Key(Arg("name")),
