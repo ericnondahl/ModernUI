@@ -22,6 +22,8 @@ gauge, controls included, and stays out of the way when nothing needs you.
 | Top left | Staging: each stage's delta-v, TWR, Isp, burn time, ATM/VAC, and what it fires (engines with their fuel, decouplers, parachutes; hover one to light its parts). Drag an action to another stage, or a stage by its name to reorder. Crew as wireframe cats (they blink; they squint when unwell), doses, EVA and MOVE; power, life support, radiation; every vessel's next crew deadline |
 | Top right | Autopilot: every mode, hold, target, thrust mode, profile and roll. When they apply: the next burn, the target, and in map view the burn editor |
 
+![Staging: hover an action to see it on the rocket, drag it to another stage, drag a stage to reorder](images/staging.jpg)
+
 Every control does what the stock button does, through the same game code, and is lit and
 greyed by the same rules.
 
