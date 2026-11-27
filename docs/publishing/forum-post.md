@@ -1,8 +1,12 @@
 # Draft: Ahwoo forums thread (Mod Releases, prefix "User Interface")
 
 Post this yourself: the content index ties the listing to your forums account through this
-thread. Upload the screenshots from `images/` into the post, and attach or link the demo
-video. Then put the thread's URL into `docs/publishing/ModernUI.toml` (`links.forums`).
+thread. Upload the screenshots from `images/` into the post, and link the demo video. Then
+put the thread's URL into `docs/publishing/ModernUI.toml` (`links.forums`).
+
+It covers what the forum's mod rules ask of a post (section 3): name and version, license,
+download link, source link, dependencies with links, a description, and the credits for
+others' work (authors, licenses, versions, links).
 
 ---
 
@@ -31,13 +35,25 @@ controls included, and the HUD stays out of the way when nothing needs you.
 
 **Demo video:** [link to the video]
 
-**Install:** through Borea (search ModernUI), or download ModernUI.zip from the GitHub
-release and unzip it into your mods folder. Needs StarMap 0.5.4 or later.
+**Version:** 0.1.0
+**License:** MIT (the bundled Barlow fonts: SIL Open Font License 1.1)
+**Download:** https://github.com/ericnondahl/ModernUI/releases/tag/v0.1.0 (ModernUI.zip)
+**Source code:** https://github.com/ericnondahl/ModernUI
+**Dependencies:** StarMap 0.5.4 or later (https://github.com/StarMapLoader/StarMap), the
+code mod loader. Borea (https://github.com/KSAModding/Borea) installs it for you.
+
+**Install:** through Borea (search ModernUI), or unzip ModernUI.zip into your mods folder,
+enable ModernUI and start the game through StarMap.
 
 **Compatibility:** built for KSA 2026.11.25.5949. Tested on Windows and macOS (the community
 Mac port); Linux reports are very welcome. It will overlap with other mods that replace
 the stock HUD.
 
-**Source and issues:** https://github.com/ericnondahl/ModernUI (MIT)
+**Credits**
+- Barlow typeface, version 1.408, by The Barlow Project Authors, SIL Open Font License 1.1,
+  bundled unmodified with its license: https://github.com/jpt/barlow
+- KSA-ReGUI by wide-frog (commit faef93a, 2026-07-30), MIT: some of ModernUI's flight values
+  follow its FlightData.cs: https://github.com/wide-frog/KSA-ReGUI
+- Full notices: THIRD_PARTY_NOTICES.md in the download and the repository.
 
 Feedback welcome, especially on readability and anything the stock HUD did that you miss.

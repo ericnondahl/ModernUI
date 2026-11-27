@@ -6,15 +6,17 @@ ModernUI is MIT-licensed (see `LICENSE`). It includes or adapts the following.
 
 ### Barlow (fonts)
 
-`ModernUI/Assets/Fonts/Barlow-*.ttf`, from https://github.com/jpt/barlow.
+`ModernUI/Assets/Fonts/Barlow-{Regular,Medium,SemiBold}.ttf`, version 1.408, unmodified,
+from https://github.com/jpt/barlow (as distributed by Google Fonts).
 Copyright 2017 The Barlow Project Authors. Licensed under the SIL Open Font License,
-Version 1.1; the license text ships beside the fonts as `Assets/Fonts/OFL.txt`.
+Version 1.1 (no Reserved Font Name); the license text ships beside the fonts as
+`Assets/Fonts/OFL.txt`.
 
 ### KSA-ReGUI
 
-https://github.com/wide-frog/KSA-ReGUI. The flight values in `ModernUI/Telemetry.cs`
-(surface velocity from the orbit's state vectors and the body's rotation) follow ReGUI's
-`FlightData.cs`.
+https://github.com/wide-frog/KSA-ReGUI, by wide-frog, at commit `faef93a` (2026-07-30).
+The flight values in `ModernUI/Telemetry.cs` (surface velocity from the orbit's state
+vectors and the body's rotation) follow ReGUI's `FlightData.cs`.
 
 ```
 MIT License
@@ -82,6 +84,6 @@ or shipped with ModernUI. The project started from KSAModTemplate
 
 ## Used at run time, not included
 
-ModernUI runs inside Kitten Space Agency (RocketWerkz) and is loaded by StarMap
-(https://github.com/StarMapLoader/StarMap), which provides Harmony
-(https://github.com/pardeike/Harmony). Neither is distributed with ModernUI.
+ModernUI runs inside Kitten Space Agency (RocketWerkz) and is loaded by StarMap 0.5.4 or
+later (https://github.com/StarMapLoader/StarMap, MIT), which provides Harmony 2.4
+(https://github.com/pardeike/Harmony, MIT). Neither is distributed with ModernUI.
