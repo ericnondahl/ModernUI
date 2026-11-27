@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#000"/>
+  <!-- the HUD's ring gauge: 270 degrees, open at the bottom, track and fill -->
+  <path d="M 128.7 383.3 A 180 180 0 1 1 383.3 383.3" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="14" stroke-linecap="round"/>
+  <path d="M 128.7 383.3 A 180 180 0 1 1 436 256" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+  <!-- a wireframe cat, as the crew card draws them -->
+  <g fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="256" cy="278" rx="96" ry="78"/>
+    <polyline points="168,248 178,152 230,206"/>
+    <polyline points="344,248 334,152 282,206"/>
+  </g>
+  <g stroke="#ffffff" stroke-opacity="0.4" stroke-width="5" stroke-linecap="round">
+    <line x1="246" y1="214" x2="246" y2="236"/><line x1="266" y1="214" x2="266" y2="236"/>
+    <line x1="208" y1="300" x2="148" y2="290"/><line x1="208" y1="310" x2="150" y2="318"/>
+    <line x1="304" y1="300" x2="364" y2="290"/><line x1="304" y1="310" x2="362" y2="318"/>
+  </g>
+  <circle cx="220" cy="270" r="11" fill="#ffffff"/>
+  <circle cx="292" cy="270" r="11" fill="#ffffff"/>
+  <polygon points="248,298 264,298 256,309" fill="#ffffff"/>
+  <polyline points="256,309 244,322" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <polyline points="256,309 268,322" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+</svg>
