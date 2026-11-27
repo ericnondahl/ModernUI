@@ -11,8 +11,8 @@ and [POLICY](https://github.com/KSAModding/content-index/blob/main/POLICY.md).
    folder; never DevBridge) and prints its contents.
 3. Test the zip as a player gets it: unzip into a clean instance's `mods/`, enable only
    ModernUI, start through StarMap.
-4. Create the GitHub release `v<version>` with `ModernUI.zip` (the asset name the index
-   reads) and the demo video attached.
+4. Create the GitHub release `v<version>` with `ModernUI.zip` attached (the asset name
+   the index reads). The demo video is shared outside the repository.
 5. The content index's watcher picks new releases up from GitHub by itself once listed.
 
 ## Listing it the first time

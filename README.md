@@ -11,9 +11,6 @@ gauge, controls included, and stays out of the way when nothing needs you.
 | ![Ascent in CLEAN mode](images/clean.jpg) | ![Autopilot in orbit](images/autopilot.jpg) |
 | ![Burn editor in map view](images/burn-editor.jpg) | ![EVA](images/eva.jpg) |
 
-A two-minute demo video (pad to orbit, a planned burn, a target, an EVA) is attached to
-each [release](../../releases).
-
 ## What's on screen
 
 | Where | What |
