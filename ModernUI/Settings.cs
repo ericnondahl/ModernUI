@@ -53,9 +53,9 @@ public class Settings
 
 	public static void Load()
 	{
-		_path = Path.Combine(KSA.Constants.DocumentsFolderPath, "ModernUI", "settings.json");
 		try
 		{
+			_path = ProfilePath();
 			if (File.Exists(_path))
 				Current = JsonSerializer.Deserialize<Settings>(File.ReadAllText(_path)) ?? new();
 		}
@@ -65,6 +65,10 @@ public class Settings
 			Current = new();
 		}
 	}
+
+	// The game's profile folder; in a method of its own so a renamed member is caught in Load.
+	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+	static string ProfilePath() => Path.Combine(KSA.Constants.DocumentsFolderPath, "ModernUI", "settings.json");
 
 	public void Save()
 	{

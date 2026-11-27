@@ -33,6 +33,7 @@ public static class Commands
 			["/key?name=<ImGuiKey>"] = "press and release a key through ImGui (P cycles the HUD's modes)",
 			["/camera?mode=Orbit|Map|Free|IVA|Fixed"] = "switch the view (map view, flight view...)",
 			["/ui?show=0|1"] = "hide or show the game's whole UI (mods' too)",
+			["/fault?at=draw|button|glitch|reset"] = "make ModernUI throw once, to test its failsafe: draw, button (a missing method, as after a game update: the HUD switches off), glitch (an ordinary error: one frame skipped); reset turns it back on; without at, its failsafe state",
 			["/wait?frames=<n>"] = "return after n more frames (default 60)",
 		},
 	};

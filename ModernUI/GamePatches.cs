@@ -12,7 +12,7 @@ namespace ModernUI;
 [HarmonyPatch(typeof(GaugeCanvas), nameof(GaugeCanvas.OnDrawUi))]
 static class HideStockGauges
 {
-	static bool Prefix() => !(Hud.Showing && Settings.Current.HideStockGauges);
+	static bool Prefix() => !(HudState.Showing && Settings.Current.HideStockGauges);
 }
 
 /// <summary>
@@ -22,17 +22,58 @@ static class HideStockGauges
 [HarmonyPatch(typeof(Program), nameof(Program.DrawProgramMenusHook))]
 static class ModsMenu
 {
+	static bool _broken;
+
 	static void Postfix()
+	{
+		if (_broken)
+			return;
+		try
+		{
+			Menu();
+		}
+		catch (Exception e)
+		{
+			_broken = true;
+			Failsafe.Report(nameof(ModsMenu), e);
+		}
+	}
+
+	// Every ImGui call is in here, so a change in the game's ImGui bindings is caught above.
+	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+	static void Menu()
 	{
 		if (!ImGui.BeginMenu("Mods"))
 			return;
+		try
+		{
+			Items();
+		}
+		finally
+		{
+			ImGui.EndMenu();
+		}
+	}
+
+	static void Items()
+	{
 		var s = Settings.Current;
-		bool enabled = s.Enabled, hide = s.HideStockGauges;
+		// Off after an error (see Failsafe): unticked, and ticking it tries again.
+		bool enabled = s.Enabled && Failsafe.Tripped == null, hide = s.HideStockGauges;
 		if (ImGui.MenuItem("ModernUI", default, ref enabled))
 		{
+			if (Failsafe.Tripped != null)
+			{
+				Failsafe.Reset();
+				enabled = true;
+			}
 			s.Enabled = enabled;
 			s.Save();
 		}
+		if (Failsafe.Tripped != null)
+			ImGui.TextDisabled($"  Off after an error, probably a game update (see logs/console.log)");
+		else if (Failsafe.FailedPatches.Count > 0)
+			ImGui.TextDisabled($"  Partly working after a game update: {string.Join(", ", Failsafe.FailedPatches)} off");
 		if (ImGui.MenuItem("ModernUI: hide stock gauges", default, ref hide))
 		{
 			s.HideStockGauges = hide;
@@ -40,12 +81,17 @@ static class ModsMenu
 		}
 		if (ImGui.BeginMenu("ModernUI mode"))
 		{
-			foreach (var (label, mode) in ((string, HudMode)[])[("Clean", HudMode.Clean), ("Flight", HudMode.Flight), ("Full", HudMode.Full)])
-				if (ImGui.MenuItem(label, "P", s.Mode == mode))
-					Hud.SetMode(mode);
-			ImGui.EndMenu();
+			try
+			{
+				foreach (var (label, mode) in ((string, HudMode)[])[("Clean", HudMode.Clean), ("Flight", HudMode.Flight), ("Full", HudMode.Full)])
+					if (ImGui.MenuItem(label, "P", s.Mode == mode))
+						Hud.SetMode(mode);
+			}
+			finally
+			{
+				ImGui.EndMenu();
+			}
 		}
-		ImGui.EndMenu();
 	}
 }
 
@@ -65,10 +111,27 @@ public static class Fonts
 
 	public static string ModDirectory = "";
 
-	static void Postfix() => Load();
+	static void Postfix() => LoadGuarded();
 
-	public static void Load()
+	/// <summary>Load, but an error (a changed font loader) leaves the game's fonts in use.</summary>
+	public static void LoadGuarded()
 	{
+		try
+		{
+			Load();
+		}
+		catch (Exception e)
+		{
+			Failsafe.Report(nameof(Fonts), e);
+		}
+	}
+
+	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+	static void Load()
+	{
+		// Not before the game has built its own fonts (the patch adds ours after it does).
+		if (FontManager.Fonts.Count == 0)
+			return;
 		foreach (var name in All)
 		{
 			if (FontManager.Fonts.ContainsKey(name))
@@ -99,11 +162,26 @@ public static class Fonts
 	[typeof(Brutal.Numerics.float2), typeof(Brutal.Numerics.float2), typeof(float), typeof(bool)])]
 static class ConsoleAboveHud
 {
+	static bool _broken;
+
 	static void Prefix(Brutal.ImGuiApi.Abstractions.ConsoleWindow __instance, ref Brutal.Numerics.float2 viewportSize)
 	{
-		if (Hud.Showing && !__instance.IsOpen)
-			viewportSize.Y = Math.Max(viewportSize.Y - Hud.ReservedPixels, 0);
+		if (_broken || !HudState.Showing)
+			return;
+		try
+		{
+			if (!IsOpen(__instance))
+				viewportSize.Y = Math.Max(viewportSize.Y - HudState.ReservedPixels, 0);
+		}
+		catch (Exception e)
+		{
+			_broken = true;
+			Failsafe.Report(nameof(ConsoleAboveHud), e);
+		}
 	}
+
+	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+	static bool IsOpen(Brutal.ImGuiApi.Abstractions.ConsoleWindow console) => console.IsOpen;
 }
 
 /// <summary>
@@ -115,17 +193,24 @@ static class ConsoleAboveHud
 [HarmonyPatch]
 static class AlertsBelowTime
 {
-	static IEnumerable<System.Reflection.MethodBase> TargetMethods() =>
-	[
-		AccessTools.Method(typeof(LoadAlert), nameof(LoadAlert.DrawList)),
-		AccessTools.Method(typeof(FixedAlert), nameof(FixedAlert.DrawList)),
-		AccessTools.Method(typeof(TimedAlert), nameof(TimedAlert.DrawList)),
-	];
+	// Whichever of the three lists still exist, looked up by name so a missing one is skipped
+	// (and logged) rather than taking the others with it.
+	static IEnumerable<System.Reflection.MethodBase> TargetMethods()
+	{
+		foreach (var type in (string[])["KSA.LoadAlert", "KSA.FixedAlert", "KSA.TimedAlert"])
+		{
+			var method = AccessTools.TypeByName(type) is { } t ? AccessTools.Method(t, "DrawList") : null;
+			if (method != null)
+				yield return method;
+			else
+				Console.WriteLine($"ModernUI: {type}.DrawList not found, probably after a game update; those alerts keep their place");
+		}
+	}
 
 	static void Prefix(ref float cursorY)
 	{
-		if (Hud.Showing && cursorY < Hud.AlertsTop)
-			cursorY = Hud.AlertsTop;
+		if (HudState.Showing && cursorY < HudState.AlertsTop)
+			cursorY = HudState.AlertsTop;
 	}
 }
 
@@ -136,5 +221,5 @@ static class AlertsBelowTime
 [HarmonyPatch(typeof(CrewClock), nameof(CrewClock.Draw))]
 static class HideCrewClock
 {
-	static bool Prefix() => !(Hud.Showing && Settings.Current.HideStockGauges);
+	static bool Prefix() => !(HudState.Showing && Settings.Current.HideStockGauges);
 }

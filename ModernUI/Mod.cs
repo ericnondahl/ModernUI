@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Brutal.ImGuiApi;
 using HarmonyLib;
 using KSA;
@@ -25,11 +26,10 @@ public class ModernUIMod
 	public void AllModsLoaded()
 	{
 		_harmony = new Harmony("ModernUI");
-		_harmony.PatchAll();
+		Failsafe.ApplyPatches(_harmony);
 		// If the game built its fonts before we patched its font manager, add ours now;
 		// later rebuilds go through the patch.
-		if (FontManager.Fonts.Count > 0)
-			Fonts.Load();
+		Fonts.LoadGuarded();
 	}
 
 	[StarMapUnload]
@@ -37,6 +37,32 @@ public class ModernUIMod
 
 	[StarMapAfterGui]
 	public void AfterGui(double dt)
+	{
+		// A game update can rename or remove something the HUD uses. An error, even one in
+		// compiling Frame against the new game, lands here: the HUD switches off and the
+		// stock HUD comes back (see Failsafe). Only ModernUI's own code is called here.
+		if (Failsafe.Tripped != null)
+			return;
+		try
+		{
+			Frame();
+			Failsafe.FrameSucceeded();
+		}
+		catch (Exception e)
+		{
+			// First what can't fail (Failsafe and HudState hold no game types), then the rest.
+			HudState.Showing = false;
+			Failsafe.FrameFailed(e);
+			try { RecoverImGui(); }
+			catch (Exception) { }
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static void RecoverImGui() => Controls.Recover();
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static void Frame()
 	{
 		// In flight and in map view (the stock gauges show in both); not in the editor, and not
 		// while the game's UI is hidden (F2).

@@ -107,6 +107,7 @@ public class Bridge
 				"/set" => await OnGameThread(() => Commands.SetEnum(Arg("enum"), Arg("value"))),
 				"/console" => await Commands.Console(Arg("cmd")),
 				"/ui" =>await OnGameThread(() => Commands.ShowUi(Arg("show") != "0")),
+				"/fault" => await OnGameThread(() => Faults.Run(query["at"])),
 				"/wait" => await Commands.WaitFrames(int.TryParse(query["frames"], out var n) ? n : 60),
 				_ => throw new KeyNotFoundException($"no command {context.Request.Url.AbsolutePath}; GET / lists them"),
 			};

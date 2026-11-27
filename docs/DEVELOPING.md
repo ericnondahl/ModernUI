@@ -19,6 +19,16 @@
   the HUD shows. Their enabled flags and saved HUD layouts are untouched.
 - **Fonts:** Barlow (SIL OFL 1.1, `ModernUI/Assets/Fonts`), added to the game's font
   manager after each font rebuild, since the game only scans its own `Content` folder.
+- **Game updates:** ModernUI patches and calls the game's internals, which a new build can
+  rename or remove. `Failsafe.cs` keeps that from breaking the game: each Harmony patch
+  class is applied on its own (a missing target loses only that patch); an error in the
+  per-frame HUD that a game update causes (a missing method, field or type), even a
+  failure to compile `Mod.Frame` against the new game, switches the HUD off for the
+  session and brings the stock HUD back; any other error skips the frame (60 in a row
+  switch it off); a patch whose own work throws stops doing it. The patches and the
+  failsafe read `HudState`, which holds no game types, so they work even if `Hud` can't load. All of it goes to `logs/console.log` (`ModernUI:` lines), and the Mods
+  menu says so. Code that touches the game from a patch goes in a separate
+  `[MethodImpl(NoInlining)]` method called inside the `try`, so a missing member is caught.
 - **Settings:** `ModernUI/settings.json` in the profile folder (the Borea instance's,
   or My Games/Kitten Space Agency), not the mod folder, which updates replace.
 - **Build:** [KSAModTools](https://github.com/AMPW-german/KSAModTools) (the `tooling/`
@@ -80,6 +90,7 @@ scripts/dev.sh call burn --data-urlencode dv=100          # a test burn at the n
 scripts/dev.sh call camera --data-urlencode mode=Map      # map view (Orbit: back to flight)
 scripts/dev.sh call target --data-urlencode id=Gemini7    # set a target (empty id clears it)
 scripts/dev.sh call key --data-urlencode name=P           # press a key through ImGui (P: next mode)
+scripts/dev.sh call fault --data-urlencode at=button   # make ModernUI throw once mid-frame (draw, button, glitch; reset: back on)
 scripts/dev.sh console simspeed 10        # any game console command, with its log output
 scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget --data-urlencode value=Prograde
                                           # flight computer settings, as the stock buttons set them
