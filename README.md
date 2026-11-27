@@ -43,9 +43,8 @@ it too.
 ModernUI is a code mod: it needs the [StarMap](https://github.com/StarMapLoader/StarMap)
 mod loader.
 
-**With [Borea](https://github.com/KSAModding/Borea)** (the community mod manager), once
-ModernUI is in its content index: find ModernUI in Discover and install it. Borea installs
-StarMap for you.
+**With [Borea](https://github.com/KSAModding/Borea)** (the community mod manager): find
+ModernUI in Discover and install it. Borea installs StarMap for you.
 
 **By hand:**
 
