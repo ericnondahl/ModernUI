@@ -47,11 +47,11 @@ public readonly record struct NavballState(
 /// </summary>
 public static class Navball
 {
-	static readonly ImColor8 White = new(255, 255, 255, 255);
+	static ImColor8 White => Theme.Ink(255);
 	static readonly ImColor8 Under = new(0, 0, 0, 90);      // under the ball, against bright scenery
-	static readonly ImColor8 Sky = new(255, 255, 255, 38);  // 15%
+	static ImColor8 Sky => Theme.Ink(38);  // 15%
 	static readonly ImColor8 Ground = new(0, 0, 0, 150);    // 60%
-	static readonly ImColor8 Rim = new(255, 255, 255, 90);
+	static ImColor8 Rim => Theme.Ink(90);
 
 	const float Stroke = 1.2f;
 	const float MarkerSize = 8.5f;
@@ -165,7 +165,7 @@ public static class Navball
 			{
 				float a = alpha * (float)Math.Clamp(0.25 + depth * 0.9, 0, 1);
 				c.Line(centre + new float2((float)prev.Y, (float)prev.Z) * radius,
-					centre + new float2((float)next.Y, (float)next.Z) * radius, new ImColor8(255, 255, 255, (byte)(a * 255)), stroke);
+					centre + new float2((float)next.Y, (float)next.Z) * radius, Theme.Ink((byte)(a * 255)), stroke);
 			}
 			prev = next;
 		}
@@ -177,7 +177,7 @@ public static class Navball
 			return;
 		var at = centre + new float2((float)helm.Y, (float)helm.Z) * radius;
 		byte a = (byte)(255 * Math.Clamp(helm.X * 1.4, 0, 0.85));
-		c.Text(Fonts.SemiBold, size, at, Align.Center, new ImColor8(255, 255, 255, a), text, shadow: false);
+		c.Text(Fonts.SemiBold, size, at, Align.Center, Theme.Ink(a), text, shadow: false);
 	}
 
 	// The visible part of the ground hemisphere (frame up < 0), filled exactly.

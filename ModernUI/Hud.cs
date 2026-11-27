@@ -28,10 +28,10 @@ public static class Hud
 	/// <summary>Height of the screen's bottom strip the HUD uses, in pixels, as of last frame.</summary>
 	public static float ReservedPixels { get => HudState.ReservedPixels; private set => HudState.ReservedPixels = value; }
 
-	static readonly ImColor8 White = new(255, 255, 255, 255);
-	static readonly ImColor8 Track = new(255, 255, 255, 46);   // 18%
-	static readonly ImColor8 Dim = new(255, 255, 255, 166);    // 65%
-	static readonly ImColor8 Faint = new(255, 255, 255, 102);  // 40%
+	static ImColor8 White => Theme.Ink(255);
+	static ImColor8 Track => Theme.Ink(46);   // 18%
+	static ImColor8 Dim => Theme.Ink(166);    // 65%
+	static ImColor8 Faint => Theme.Ink(102);  // 40%
 	static readonly ImColor8 Clear = new(0, 0, 0, 0);
 	static readonly ImColor8 Shade = new(0, 0, 0, 178);        // 70% black at the bottom edge
 	static readonly ImColor8 ShadeTop = new(0, 0, 0, 140);     // behind the time, at the top edge
@@ -401,7 +401,7 @@ public static class Hud
 		byte alpha = (byte)(255 * Math.Clamp((1.8 - age) / 0.5, 0, 1));
 		string text = $"{mode.ToString().ToUpperInvariant()} MODE";
 		float w = c.MeasureText(Fonts.SemiBold, SmallSize + 1, text, tracking: 3);
-		c.FillRect(new float2(centreX - w / 2 - 14, y - 16), new float2(centreX + w / 2 + 14, y + 16), new ImColor8(255, 255, 255, (byte)(alpha * 0.9)), 4);
+		c.FillRect(new float2(centreX - w / 2 - 14, y - 16), new float2(centreX + w / 2 + 14, y + 16), Theme.Ink((byte)(alpha * 0.9)), 4);
 		c.Text(Fonts.SemiBold, SmallSize + 1, new float2(centreX, y), Align.Center, new ImColor8(0, 0, 0, alpha), text, tracking: 3, shadow: false);
 	}
 

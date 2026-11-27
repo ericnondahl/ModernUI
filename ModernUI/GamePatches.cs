@@ -92,6 +92,22 @@ static class ModsMenu
 				ImGui.EndMenu();
 			}
 		}
+		if (ImGui.BeginMenu("ModernUI colour"))
+		{
+			try
+			{
+				foreach (var (label, value) in Theme.Choices)
+					if (ImGui.MenuItem(label, default, s.Color == value))
+					{
+						s.Color = value;
+						s.Save();
+					}
+			}
+			finally
+			{
+				ImGui.EndMenu();
+			}
+		}
 	}
 }
 

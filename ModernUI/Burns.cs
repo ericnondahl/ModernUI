@@ -24,9 +24,9 @@ public static class Burns
 	const float SmallSize = 15;
 	const float Pad = 10;
 
-	static readonly ImColor8 White = new(255, 255, 255, 255);
-	static readonly ImColor8 Dim = new(255, 255, 255, 166);
-	static readonly ImColor8 Faint = new(255, 255, 255, 80);
+	static ImColor8 White => Theme.Ink(255);
+	static ImColor8 Dim => Theme.Ink(166);
+	static ImColor8 Faint => Theme.Ink(80);
 	static readonly ImColor8 Backing = new(0, 0, 0, 120);
 
 	// ---- burn control ------------------------------------------------------------------
