@@ -140,11 +140,24 @@ build (a daily scheduled check reports one):
 1. **Get it running:** download the Linux build from https://ksa.ahwoo.com into
    `~/Downloads`; run `./port.sh --update` in `~/Downloads/ksa-macos-port` (once a port
    release names the build). Then `scripts/dev.sh restart` must build and start cleanly.
-2. **The failsafe:** `logs/console.log` should have no `ModernUI:` failsafe lines (a
+2. **What changed:** each build ships its changelog (the text posted in the Discord
+   `#version-history` channel) as `Content/Versions/v<year>.<month>.X.<build>.json`, with
+   one entry per commit. Read it from the tarball, or the same path under
+   `~/Applications/"Kitten Space Agency.app"/Contents/Resources/` once installed:
+
+   ```sh
+   tar -xzOf ~/Downloads/ksa_linux_v<version>.tar.gz './Content/Versions/v*.<build>.json' \
+     | python3 -I -c "import json,sys; [print(c['rev'], l) for c in json.load(sys.stdin)['commits'] for l in c['lines']]"
+   ```
+
+   Each file covers only its own build, so read one per build since the last tested one.
+   Look for anything ModernUI reads or draws over: UI and ImGui, the HUD, gauges, the
+   navball, staging and sequences, parts and modules, input, and modding.
+3. **The failsafe:** `logs/console.log` should have no `ModernUI:` failsafe lines (a
    missing patch target, the HUD switched off).
-3. **A flight:** `scripts/smoke.sh` (stage, ignite, climb, shutdown through the HUD), and
+4. **A flight:** `scripts/smoke.sh` (stage, ignite, climb, shutdown through the HUD), and
    `scripts/dev.sh gallery <build>` to compare the screens with the last build's.
-4. **Staging parts:** the staging chips come from the game's part data, which changes as
+5. **Staging parts:** the staging chips come from the game's part data, which changes as
    parts are added.
    - Run `scripts/staged-parts.py | diff docs/staged-parts.txt -`. Every difference is a part
      added, removed or changed. Check that each one's chips and caption name make sense.
@@ -159,7 +172,7 @@ build (a daily scheduled check reports one):
      mirrors its `BuildSequenceActions`, `GetActionIcon` and drag operations
      (`InputEvents.SequenceOp`); compare them. `scripts/staging-demo.sh` shows staging
      working end to end.
-5. **Release notes:** update the "Built for KSA" line in the README, the version in
+6. **Our versions:** update the "Built for KSA" line in the README, the version in
    `docs/publishing/forum-post.md`, and `game_min` in `docs/publishing/ModernUI.toml`.
 
 ## References
