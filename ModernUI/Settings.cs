@@ -38,6 +38,9 @@ public class Settings
 	/// <summary>The colour the HUD draws in; white unless the player picks another.</summary>
 	public HudColor Color { get; set; } = HudColor.White;
 
+	/// <summary>Small icons before the section labels (SPEED, STAGING, CREW...).</summary>
+	public bool SectionIcons { get; set; } = true;
+
 	/// <summary>Whether the crew card is open (in FLIGHT mode; closed, it is one line).</summary>
 	public bool CrewOpen { get; set; }
 

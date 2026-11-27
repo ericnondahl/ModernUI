@@ -67,7 +67,7 @@ public static class Autopilot
 		c.FillRect(new float2(left - pad, top - pad), new float2(right + pad, top + height + pad), Backing, 6);
 
 		// The header: what the autopilot is doing, and the button that opens the panel.
-		c.Text(Fonts.Medium, SmallSize, new float2(left, top + RowHeight / 2), Align.Left, Dim, "AUTOPILOT", tracking: 2.4f);
+		Icons.Label(c, Icon.Autopilot, new float2(left, top + RowHeight / 2), Align.Left, Dim, Fonts.Medium, SmallSize, "AUTOPILOT", 2.4f);
 		c.Text(Fonts.SemiBold, SmallSize + 2, new float2(right - 64 - 12, top + RowHeight / 2), Align.Right, White, State(v), tracking: 1.4f);
 		if (!forceOpen && Controls.Button(c, "AUTOPILOT", open ? "CLOSE" : "OPEN", new float2(right - 64, top), new float2(right, top + RowHeight), lit: open))
 		{

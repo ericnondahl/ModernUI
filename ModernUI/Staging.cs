@@ -182,11 +182,11 @@ public static class Staging
 
 		// Header: total delta-v; the resource groups window; open/close.
 		float hy = top + RowHeight / 2;
-		c.Text(Fonts.Medium, SmallSize, new float2(left, hy), Align.Left, Dim, "STAGING", tracking: 2.4f);
-		float total = v.Parts.PerformanceSequences.TotalDeltaV;
-		c.Text(Fonts.SemiBold, SmallSize + 2, new float2(left + 110, hy), Align.Left, White,
+		Icons.Label(c, Icon.Stages, new float2(left, hy), Align.Left, Dim, Fonts.Medium, SmallSize, "STAGING", 2.4f);
+		float total = v.Parts.PerformanceSequences.TotalDeltaV, totalLeft = left + 110 + Icons.Offset;
+		c.Text(Fonts.SemiBold, SmallSize + 2, new float2(totalLeft, hy), Align.Left, White,
 			total > 0 ? $"{total:N0}" : "—", tabular: true);
-		c.Text(Fonts.Medium, SmallSize - 3, new float2(left + 110 + c.MeasureText(Fonts.SemiBold, SmallSize + 2, total > 0 ? $"{total:N0}" : "—", tabular: true) + 6, hy + 1),
+		c.Text(Fonts.Medium, SmallSize - 3, new float2(totalLeft + c.MeasureText(Fonts.SemiBold, SmallSize + 2, total > 0 ? $"{total:N0}" : "—", tabular: true) + 6, hy + 1),
 			Align.Left, Dim, "M/S TOTAL", tracking: 1.2f);
 		if (Controls.Button(c, "RESOURCES", "RESOURCES", new float2(right - 64 - 6 - 100, top), new float2(right - 64 - 6, top + RowHeight),
 				lit: ResourceGroupsPanel.IsOpen))

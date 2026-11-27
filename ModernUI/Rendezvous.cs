@@ -34,9 +34,9 @@ public static class Rendezvous
 		c.FillRect(new float2(left - Pad, top - Pad), new float2(right + Pad, top + height + Pad), Backing, 6);
 
 		float hy = top + RowHeight / 2;
-		c.Text(Fonts.Medium, SmallSize, new float2(left, hy), Align.Left, Dim, "TARGET", tracking: 2.4f);
+		Icons.Label(c, Icon.Target, new float2(left, hy), Align.Left, Dim, Fonts.Medium, SmallSize, "TARGET", 2.4f);
 		// Between the TARGET label and CLEAR: a long name shortens.
-		string name = c.Fit(Fonts.SemiBold, SmallSize + 2, target.Id.ToUpperInvariant(), Width - 72 - 96, tracking: 1.4f);
+		string name = c.Fit(Fonts.SemiBold, SmallSize + 2, target.Id.ToUpperInvariant(), Width - 72 - 96 - Icons.Offset, tracking: 1.4f);
 		c.Text(Fonts.SemiBold, SmallSize + 2, new float2(right - 72, hy), Align.Right, White, name, tracking: 1.4f);
 		if (Controls.Button(c, "TARGET CLEAR", "CLEAR", new float2(right - 64, top), new float2(right, top + RowHeight)))
 			InputEvents.ChangeTargetBuffer.Add(new InputEvents.ChangeTargetData { Vehicle = v, Target = null });
