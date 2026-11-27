@@ -28,7 +28,8 @@ public static class Commands
 			["/set?enum=<KSA enum>&value=<name>"] = "a flight computer setting as the stock buttons set it, e.g. enum=FlightComputerAttitudeTrackTarget&value=Prograde, enum=VehicleEngine&value=MainIgnite",
 			["/buttons"] = "ModernUI's buttons by id",
 			["/click?button=<id>"] = "click a ModernUI button through ImGui's input, as the mouse would",
-			["/drag?from=<id>&to=<id>&at=top|middle|bottom&steps=<n>"] = "press on one ModernUI control, move to another in n steps (a frame or two each), release there; at: where in the target (default middle)",
+			["/drag?from=<id>&to=<id>&at=top|middle|bottom&steps=<n>&via=<id>&hold=<s>"] = "press on one ModernUI control, move to another in n steps (a frame or two each), release there; at: where in the target (default middle); via: stop over that control for hold seconds on the way (a scroll strip, say)",
+			["/wheel?button=<id>&dy=<n>"] = "turn the mouse wheel over a ModernUI control (dy > 0: up)",
 			["/hover?button=<id>&seconds=<s>"] = "hold the mouse over a ModernUI control for a while (no click)",
 			["/burn?dv=<m/s>"] = "a prograde burn at the next apoapsis, selected for editing",
 			["/target?id=<vehicle or body>"] = "set the controlled vehicle's target (empty id clears it)",
@@ -348,10 +349,11 @@ public static class Commands
 
 	// A drag as a player makes one: press on the source, move to the target in steps (eased,
 	// so a recording shows the motion), release there.
-	public static async Task<object?> Drag(string from, string to, string at, int steps)
+	public static async Task<object?> Drag(string from, string to, string at, int steps, string? via = null, float hold = 1)
 	{
 		var (sMin, sMax) = await Rect(from);
 		var start = (sMin + sMax) / 2;
+		steps = Math.Clamp(steps, 2, 240);
 		SyntheticMouse.Active = true;
 		try
 		{
@@ -359,18 +361,29 @@ public static class Commands
 			await WaitFrames(3);
 			await Bridge.OnGameThread(() => { ImGui.GetIO().AddMouseButtonEvent(0, true); return null; });
 			await WaitFrames(3);
+			async Task Glide(float2 a, float2 b)
+			{
+				for (int i = 1; i <= steps; i++)
+				{
+					float t = (float)i / steps;
+					float e = t * t * (3 - 2 * t);
+					await MouseTo(a + (b - a) * e);
+					await WaitFrames(2);
+				}
+			}
+			if (via != null)
+			{
+				var (vMin, vMax) = await Rect(via);
+				var mid = (vMin + vMax) / 2;
+				await Glide(start, mid);
+				await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(hold, 0, 30)));
+				start = mid;
+			}
 			// The target's rectangle can move while dragging (the list redraws); read it late.
 			var (tMin, tMax) = await Rect(to);
 			float fy = at switch { "top" => 0.2f, "bottom" => 0.8f, _ => 0.5f };
 			var end = new float2((tMin.X + tMax.X) / 2, tMin.Y + (tMax.Y - tMin.Y) * fy);
-			steps = Math.Clamp(steps, 2, 240);
-			for (int i = 1; i <= steps; i++)
-			{
-				float t = (float)i / steps;
-				float e = t * t * (3 - 2 * t);
-				await MouseTo(start + (end - start) * e);
-				await WaitFrames(2);
-			}
+			await Glide(start, end);
 			await WaitFrames(6);
 			await Bridge.OnGameThread(() => { ImGui.GetIO().AddMouseButtonEvent(0, false); return null; });
 			await WaitFrames(3);
@@ -382,6 +395,27 @@ public static class Commands
 		{
 			SyntheticMouse.Active = false;
 		}
+	}
+
+	public static async Task<object?> Wheel(string id, float dy)
+	{
+		var (min, max) = await Rect(id);
+		var at = (min + max) / 2;
+		SyntheticMouse.Active = true;
+		try
+		{
+			await MouseTo(at);
+			await WaitFrames(3);
+			await Bridge.OnGameThread(() => { ImGui.GetIO().AddMouseWheelEvent(0, dy); return null; });
+			await WaitFrames(3);
+			await MouseTo(new float2(-float.MaxValue, -float.MaxValue));
+			await WaitFrames(2);
+		}
+		finally
+		{
+			SyntheticMouse.Active = false;
+		}
+		return new { wheel = dy, over = id };
 	}
 
 	public static async Task<object?> Hover(string id, float seconds)

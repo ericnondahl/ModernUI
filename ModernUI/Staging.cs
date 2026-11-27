@@ -15,8 +15,13 @@ namespace ModernUI;
 /// symmetry group and a fuel bar on engines. Hovering a chip or a stage highlights its parts
 /// on the vehicle. Closed, the panel still shows the next stage's chips.
 ///
+/// Open, the list shows as many stages as fit (ListBudget), from the next stage up; more
+/// scroll, with a strip above and below naming the hidden stages (click it, or the mouse
+/// wheel over the panel). Firing a stage brings the next one back into view.
+///
 /// Drag a chip onto another stage to fire it there, or drag a stage by its name to reorder
-/// the stages; fired stages take neither. Both go through the game's SequenceChangeBuffer,
+/// the stages; holding a drag over a strip scrolls to the stages it hides. Fired stages
+/// take neither. Both go through the game's SequenceChangeBuffer,
 /// as the stock panel's drags do.
 ///
 /// The game only computes the per-stage numbers while its Sequence or Engine gauge is
@@ -32,7 +37,11 @@ public static class Staging
 	const float IconSize = 18;
 	const float Gap = 4;
 	const float SmallSize = 15;
-	const int MaxRows = 8;
+	// The open list's rows take at most this much height (design units), about six stages:
+	// what is left between the header, the crew card and the rings in FULL mode. More stages
+	// scroll: a strip above and below names the hidden ones.
+	const float ListBudget = 360;
+	const float MoreHeight = 22;
 
 	static ImColor8 White => Theme.Ink(255);
 	static ImColor8 Dim => Theme.Ink(166);
@@ -85,6 +94,12 @@ public static class Staging
 	static readonly List<Part> _highlighted = [];
 	static (Item Item, float2 Min, float2 Max, string Caption)? _hovered;
 
+	// Scrolling: the lowest stage shown (an index into the sequences) once the player scrolls;
+	// null follows the next stage. A new next stage (or vehicle) goes back to following it.
+	static int? _scrollLo;
+	static (Vehicle? Vehicle, int Next) _scrollFor;
+	static long _lastDragScroll;
+
 	/// <summary>
 	/// Drops what the panel set this frame: the parts it highlighted, a hover caption. A drag
 	/// ends too, unless keepDrag (a frame that draws the panel again).
@@ -119,14 +134,34 @@ public static class Staging
 		if (_drag != null && (_drag.Vehicle != v || !open))
 			_drag = null;
 
-		// Open: every stage, the last at the top as the stock panel lists them (a window of
-		// MaxRows that keeps the next stage in view). Closed: the next stage, on one line.
+		// Open: the stages, the last at the top as the stock panel lists them, as many as fit
+		// ListBudget, from the next stage up unless scrolled. Closed: the next stage, on one line.
 		var rows = new List<Row>();
-		if (open)
+		int lo = 0, hi = -1;
+		if (open && sequences.Length > 0)
 		{
-			var (lo, hi) = Window(sequences.Length, nextIndex);
+			var all = new Row[sequences.Length];
+			for (int i = 0; i < sequences.Length; i++)
+				all[i] = Layout(c, sequences[i], i, i < performance.Length ? performance[i] : null, ColStage, RowHeight - 2, rowGapBelow: 6);
+			if (_scrollFor != (v, next))
+			{
+				_scrollLo = null;
+				_scrollFor = (v, next);
+			}
+			// The highest the bottom row can be with the list still full: the top stages.
+			int maxLo = sequences.Length - 1;
+			float used = all[maxLo].Height;
+			while (maxLo > 0 && used + Gap + all[maxLo - 1].Height <= ListBudget)
+				used += Gap + all[--maxLo].Height;
+			lo = Math.Clamp(_scrollLo ?? Math.Max(nextIndex, 0), 0, maxLo);
+			if (_scrollLo != null)
+				_scrollLo = lo;
+			hi = lo;
+			used = all[lo].Height;
+			while (hi + 1 < sequences.Length && used + Gap + all[hi + 1].Height <= ListBudget)
+				used += Gap + all[++hi].Height;
 			for (int i = hi; i >= lo; i--)
-				rows.Add(Layout(c, sequences[i], i, i < performance.Length ? performance[i] : null, ColStage, RowHeight - 2, rowGapBelow: 6));
+				rows.Add(all[i]);
 		}
 		else if (nextIndex >= 0)
 		{
@@ -134,9 +169,11 @@ public static class Staging
 			float chipsLeft = ColStage + c.MeasureText(Fonts.SemiBold, SmallSize, RowName(s, next, list.ActiveSequence), tracking: 1.4f) + 16;
 			rows.Add(Layout(c, s, nextIndex, null, chipsLeft, (RowHeight - ChipHeight) / 2, rowGapBelow: (RowHeight - ChipHeight) / 2));
 		}
+		bool moreAbove = open && hi >= 0 && hi < sequences.Length - 1;
+		bool moreBelow = open && hi >= 0 && lo > 0;
 
-		float listTop = top + RowHeight + 8 + (open && rows.Count > 0 ? RowHeight : 0);
-		float height = rows.Count == 0 ? RowHeight : listTop - top + rows.Sum(r => r.Height + Gap) - Gap;
+		float listTop = top + RowHeight + 8 + (open && rows.Count > 0 ? RowHeight : 0) + (moreAbove ? MoreHeight + Gap : 0);
+		float height = rows.Count == 0 ? RowHeight : listTop - top + rows.Sum(r => r.Height + Gap) - Gap + (moreBelow ? Gap + MoreHeight : 0);
 		float right = left + Width;
 
 		Controls.BeginRegion(c, "staging", new float2(left, top), new float2(right, top + height));
@@ -176,6 +213,20 @@ public static class Staging
 			row.Top = y;
 			DrawRow(c, left, row, next, list, v, open);
 			y += row.Height + Gap;
+		}
+
+		// The hidden stages: a strip above and below the list. Click one, or hold a drag over
+		// it, to scroll a stage that way; the mouse wheel over the panel scrolls too.
+		if (moreAbove)
+			MoreStrip(c, "STAGING MORE UP", left, listTop - Gap - MoreHeight, up: true, sequences[hi + 1].Number, sequences[^1].Number, lo + 1);
+		if (moreBelow)
+			MoreStrip(c, "STAGING MORE DOWN", left, y, up: false, sequences[0].Number, sequences[lo - 1].Number, lo - 1);
+		if (moreAbove || moreBelow)
+		{
+			var mouse = c.Units(1) * (float2)ImGui.GetMousePos();
+			float wheel = ImGui.GetIO().MouseWheel;
+			if (wheel != 0 && mouse.X >= left - pad && mouse.X <= right + pad && mouse.Y >= top && mouse.Y <= top + height)
+				_scrollLo = Math.Max(0, lo + Math.Sign(wheel));
 		}
 
 		if (_drag != null)
@@ -222,13 +273,38 @@ public static class Staging
 
 	// ---- layout --------------------------------------------------------------------------------
 
-	/// <summary>The rows shown out of count: all, or MaxRows from the stage under the next one up.</summary>
-	static (int Lo, int Hi) Window(int count, int nextIndex)
+	/// <summary>
+	/// A strip naming the stages hidden that way (from..to), with an arrow. Clicked, or held
+	/// over while dragging, it scrolls the list to scrollTo.
+	/// </summary>
+	static void MoreStrip(Canvas c, string id, float left, float top, bool up, int from, int to, int scrollTo)
 	{
-		if (count <= MaxRows)
-			return (0, count - 1);
-		int lo = nextIndex < 0 ? count - MaxRows : Math.Min(Math.Max(0, nextIndex - 1), count - MaxRows);
-		return (lo, lo + MaxRows - 1);
+		var min = new float2(left, top);
+		var max = new float2(left + Width, top + MoreHeight);
+		bool clicked = Controls.Area(c, id, min, max, out bool hovered, out _);
+		var mouse = c.Units(1) * (float2)ImGui.GetMousePos();
+		bool dragOver = _drag != null && mouse.X >= min.X && mouse.X <= max.X && mouse.Y >= min.Y && mouse.Y <= max.Y;
+		if (clicked)
+			_scrollLo = scrollTo;
+		else if (dragOver && Environment.TickCount64 - _lastDragScroll > 350)
+		{
+			_scrollLo = scrollTo;
+			_lastDragScroll = Environment.TickCount64;
+		}
+		bool lit = hovered || dragOver;
+		c.FillRect(min, max, lit ? HoverFill : NextFill, 3);
+		string label = from == to ? $"STAGE {from}" : $"STAGES {from}–{to}";
+		float cy = top + MoreHeight / 2;
+		float w = c.MeasureText(Fonts.SemiBold, SmallSize - 3, label, tracking: 1.4f);
+		float x = left + Width / 2 - (w + 14) / 2;
+		var ink = lit ? White : Dim;
+		if (up)
+			c.FillTriangle(new float2(x, cy + 3), new float2(x + 8, cy + 3), new float2(x + 4, cy - 3), ink);
+		else
+			c.FillTriangle(new float2(x, cy - 3), new float2(x + 4, cy + 3), new float2(x + 8, cy - 3), ink);
+		c.Text(Fonts.SemiBold, SmallSize - 3, new float2(x + 14, cy), Align.Left, ink, label, tracking: 1.4f);
+		if (hovered)
+			ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
 	}
 
 	/// <summary>A stage's chips from (chipsLeft, chipsTop) in the row, wrapping at the row's width.</summary>
@@ -328,6 +404,38 @@ public static class Staging
 		ParachuteCut => "CUT",
 		_ => "",
 	};
+
+	static readonly EditorTag Thermal = new("Thermal");
+	static readonly EditorTag Interstellar = new("Interstellar");
+
+	/// <summary>
+	/// What the part is, from its editor tags, for a part with no display name (most stock
+	/// prefabs): an escape tower, an interstellar drive, a heatshield, an interstage, a
+	/// service module; otherwise what the action is.
+	/// </summary>
+	static string Describe(Item item)
+	{
+		var t = item.Leader.Template;
+		if (t.HasEditorTag(EditorTag.Booster) && HasDecoupler(item.Leader))
+			return "ESCAPE TOWER";
+		if (t.HasEditorTag(Interstellar))
+			return "INTERSTELLAR DRIVE";
+		if (t.HasEditorTag(Thermal))
+			return "HEATSHIELD";
+		if (t.HasEditorTag(EditorTag.Interstage))
+			return "INTERSTAGE";
+		if (t.HasEditorTag(EditorTag.Cargo))
+			return "SERVICE MODULE";
+		return KindName(item.Kind);
+	}
+
+	static bool HasDecoupler(Part part)
+	{
+		foreach (var module in part.GetSubtreeSequencedModules())
+			if (module is Decoupler)
+				return true;
+		return false;
+	}
 
 	static string KindName(Kind kind) => kind switch
 	{
@@ -454,7 +562,7 @@ public static class Staging
 		// A part without a display name in the game's data shows its id
 		// (COREFAIRINGA_PREFAB_INTERSTAGE...): say what it is instead.
 		string name = item.Leader.DisplayName ?? "";
-		string text = name.Length == 0 || name.Contains('_') ? KindName(item.Kind) : name.ToUpperInvariant();
+		string text = name.Length == 0 || name.Contains('_') ? Describe(item) : name.ToUpperInvariant();
 		if (item.Count > 1)
 			text += $" ×{item.Count}";
 		string verb = Verb(item.Module);

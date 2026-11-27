@@ -87,7 +87,9 @@ scripts/burst.sh tumble 32                # 32 quick shots of the navball, tiled
 scripts/dev.sh call vehicles              # vehicles to launch (yours and the defaults)
 scripts/dev.sh call click --data-urlencode button=STAGE   # click a HUD button through ImGui
 scripts/dev.sh call drag --data-urlencode "from=STAGE 2 ITEM 0" --data-urlencode "to=STAGE 3 ROW"
-                                          # drag one HUD control onto another (at=top|middle|bottom of it)
+                                          # drag one HUD control onto another (at=top|middle|bottom of it;
+                                          # via=<id>&hold=<s> stops over a control on the way)
+scripts/dev.sh call wheel --data-urlencode "button=STAGE 3 ROW" --data-urlencode dy=1   # mouse wheel over a control
 scripts/dev.sh call hover --data-urlencode "button=STAGE 1 ITEM 1"   # hold the mouse over a control
 scripts/dev.sh call burn --data-urlencode dv=100          # a test burn at the next apoapsis
 scripts/dev.sh call camera --data-urlencode mode=Map      # map view (Orbit: back to flight)
