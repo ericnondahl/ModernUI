@@ -34,7 +34,7 @@ Every control does what the stock button does, through the same game code.
 
 ![EVA](ksa-image:Eva)
 
-Tested on macOS (the community Mac port); reports from Windows and Linux are welcome."""
+Tested on Windows and macOS (the community Mac port); reports from Linux are welcome."""
 license = "MIT AND OFL-1.1"
 tags = ["user-interface"]
 

@@ -34,9 +34,9 @@ controls included, and the HUD stays out of the way when nothing needs you.
 **Install:** through Borea (search ModernUI), or download ModernUI.zip from the GitHub
 release and unzip it into your mods folder. Needs StarMap 0.5.4 or later.
 
-**Compatibility:** built for KSA 2026.11.25.5949. Tested on macOS (the community Mac port);
-it should work on Windows and Linux but I haven't tested them yet, so reports are very
-welcome. It will overlap with other mods that replace the stock HUD.
+**Compatibility:** built for KSA 2026.11.25.5949. Tested on Windows and macOS (the community
+Mac port); Linux reports are very welcome. It will overlap with other mods that replace
+the stock HUD.
 
 **Source and issues:** https://github.com/ericnondahl/ModernUI (MIT)
 

@@ -309,6 +309,11 @@ public static class Crew
 		string summary = alerts.Count == 0
 			? FleetClock.Soonest() is { } next ? $"ALL WELL · {next}" : "ALL WELL"
 			: alerts.Count == 1 ? alerts[0] : $"{alerts[0]}  +{alerts.Count - 1}";
+		// Up to the OPEN button: a long vessel name shortens rather than running under it.
+		float room = right - 64 - 12 - (x + 18);
+		summary = alerts.Count > 0
+			? c.Fit(Fonts.SemiBold, SmallSize, summary, room, tracking: 1.4f)
+			: c.Fit(Fonts.Medium, SmallSize, summary, room, tracking: 1.4f);
 		if (alerts.Count > 0)
 		{
 			float w = c.MeasureText(Fonts.SemiBold, SmallSize, summary, tracking: 1.4f);

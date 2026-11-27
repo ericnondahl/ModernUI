@@ -22,7 +22,7 @@ public static class Commands
 			["/screenshot?path=<png>"] = "PNG of the next frame, UI included (Mac port only); path optional",
 			["/vehicles"] = "vehicle save names, for /launch",
 			["/newgame"] = "a fresh world: clock at zero, no vehicles",
-			["/launch?vehicle=<save>&site=<id>"] = "put a vehicle save on a launch site of the home body and control it, e.g. site=CCSFS LC-39A",
+			["/launch?vehicle=<save>&site=<id>&id=<name>"] = "put a vehicle save on a launch site of the home body and control it, e.g. site=CCSFS LC-39A; id names it (default: the save's name)",
 			["/fly?alt=<m>&speed=<m/s>"] = "teleport the controlled vehicle onto a vertical climb through that altitude; without speed, a circular orbit",
 			["/console?cmd=<line>"] = "run a game console command (simspeed, refill, loadvehicle, control, exit, ...) and return its output",
 			["/set?enum=<KSA enum>&value=<name>"] = "a flight computer setting as the stock buttons set it, e.g. enum=FlightComputerAttitudeTrackTarget&value=Prograde, enum=VehicleEngine&value=MainIgnite",
@@ -164,7 +164,7 @@ public static class Commands
 
 	// The benchmark's Vehicles.Launch: a vehicle save on a launch site of the home body, as
 	// the game's launch menu makes it, then given control and the cameras.
-	public static object? Launch(string name, string siteId)
+	public static object? Launch(string name, string siteId, string? id = null)
 	{
 		var system = Universe.CurrentSystem ?? throw new InvalidOperationException("no game loaded");
 		if (system.HomeBody is not Celestial body)
@@ -178,7 +178,7 @@ public static class Commands
 		var (min, max) = tree.ComputeBoundingBoxAsmb();
 		var state = Vehicle.GetInitialKinematicStateForLocation(body, Universe.GetNextSimStep().NextTime,
 			site.Latitude.ToDegrees(), site.Longitude.ToDegrees(), min, max, double3.Unpack(in mass.Offset), new Random(1).RandomColor());
-		var vehicle = Vehicle.CreateVehicle(system, state.Body2Cce, state.BodyRates, system.HomeBody, name, tree.Root, state.Orbit);
+		var vehicle = Vehicle.CreateVehicle(system, state.Body2Cce, state.BodyRates, system.HomeBody, id ?? name, tree.Root, state.Orbit);
 		state.Orbit.Parent!.Children.Add(vehicle);
 		vehicle.UpdatePerFrameData();
 

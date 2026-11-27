@@ -13,14 +13,18 @@
 #   scripts/dev.sh window             (restart does this) the test instance's game in a small
 #                                     always-on-top window, so macOS keeps drawing it
 #
-# Env: KSA_INSTANCE (Borea instance name, default Test), KSA_VEHICLE (vehicle save for
+# Env: KSA_INSTANCE (Borea instance name or id; default: the one Directory.Build.local.props
+# builds into), KSA_VEHICLE (vehicle save for
 # flight), KSA_SITE (launch site, default "CCSFS LC-39A"), KSA_DEVBRIDGE_PORT (default 7878),
 # KSA_WINDOW (window size such as 1600x900, centred; default half the screen).
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 BOREA=/Applications/Borea.app/Contents/MacOS/borea
-INSTANCE="${KSA_INSTANCE:-Test}"
+# The Borea instance: KSA_INSTANCE, or the one Directory.Build.local.props builds into (by
+# its id, so renaming the instance in Borea doesn't matter), or one named Test.
+local_instance=$(sed -n 's:.*/Instances/\([^/]*\)/mods/.*:\1:p' "$REPO/Directory.Build.local.props" 2>/dev/null | head -1)
+INSTANCE="${KSA_INSTANCE:-${local_instance:-Test}}"
 SITE="${KSA_SITE:-CCSFS LC-39A}"
 PORT="${KSA_DEVBRIDGE_PORT:-7878}"
 URL="http://127.0.0.1:$PORT"

@@ -95,7 +95,7 @@ public class Bridge
 				"/screenshot" => await Commands.Screenshot(query["path"]),
 				"/vehicles" => await OnGameThread(Commands.VehicleSaveNames),
 				"/newgame" => await OnGameThread(Commands.NewGame),
-				"/launch" => await OnGameThread(() => Commands.Launch(Arg("vehicle"), Arg("site"))),
+				"/launch" => await OnGameThread(() => Commands.Launch(Arg("vehicle"), Arg("site"), query["id"])),
 				"/fly" => await OnGameThread(() => Commands.Fly(double.Parse(Arg("alt")), query["speed"] is { } s ? double.Parse(s) : null)),
 				"/mouse" => await Commands.MouseProbe(float.Parse(Arg("x")), float.Parse(Arg("y"))),
 				"/buttons" => await OnGameThread(Commands.ButtonNames),

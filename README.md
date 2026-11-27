@@ -71,9 +71,8 @@ profile folder, so updating the mod keeps them.
 - Built for KSA **2026.11.25.5949** with StarMap **0.5.4**. KSA is in pre-alpha and code
   mods reach into the game's internals, so a game update can break ModernUI until it is
   updated.
-- Tested on **macOS** (the [Mac port](https://github.com/renancamm/ksa-macos-port)).
-  Nothing in it is Mac-specific, but it has not been tested on Windows or Linux yet;
-  reports are welcome.
+- Tested on **Windows** and **macOS** (the [Mac port](https://github.com/renancamm/ksa-macos-port)).
+  Linux is untested; reports are welcome.
 - Other mods that replace or hide the stock HUD (CompactHUD, ReGUI) will overlap with it.
 
 ## Known limitations

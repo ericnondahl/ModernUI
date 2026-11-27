@@ -126,7 +126,7 @@ public static class FleetClock
 			if (Controls.Button(c, $"FLEET {i}", "", min, min + new float2(width, RowHeight)))
 				CrewClock.Activate(e);
 			c.Text(Fonts.SemiBold, SmallSize - 1, new float2(left + 10, y + RowHeight / 2), Align.Left, IsUrgent(e) ? White : Dim,
-				Describe(e), tracking: 1f);
+				c.Fit(Fonts.SemiBold, SmallSize - 1, Describe(e), width - 20, tracking: 1f), tracking: 1f);
 			y += RowHeight + 4;
 		}
 		return y;

@@ -139,6 +139,23 @@ public readonly struct Canvas
 	}
 
 	/// <summary>
+	/// The text, shortened with "..." if it is wider than maxWidth (design units) as Text
+	/// would lay it out.
+	/// </summary>
+	public string Fit(string fontName, float size, string text, float maxWidth, float tracking = 0, bool tabular = false)
+	{
+		if (MeasureText(fontName, size, text, tracking, tabular) <= maxWidth)
+			return text;
+		for (int n = text.Length - 1; n > 0; n--)
+		{
+			string shorter = text[..n].TrimEnd(' ', '·') + "...";
+			if (MeasureText(fontName, size, shorter, tracking, tabular) <= maxWidth)
+				return shorter;
+		}
+		return "...";
+	}
+
+	/// <summary>
 	/// Draws text whose cap height is centred on y: numbers and capitals sit visually in the
 	/// middle of whatever they are centred on, which ImGui's top-of-line position doesn't do.
 	/// </summary>
