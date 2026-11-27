@@ -7,7 +7,8 @@
   `[StarMapAfterGui]` every frame, after the game's own UI.
 - **Drawing:** the game's UI is Dear ImGui, through RocketWerkz's
   [BRUTAL](https://github.com/ahwootech/BRUTAL) bindings (`Brutal.ImGuiApi`). Gauges are
-  drawn on ImGui's foreground draw list (`PathArcTo`, `AddText`), with no window frames.
+  drawn on ImGui's background draw list (`PathArcTo`, `AddText`), with no window frames,
+  so the game's menus and windows draw over them.
 - **Data:** `Telemetry.cs` reads the flight's game state; its speed calculations follow
   [KSA-ReGUI](https://github.com/wide-frog/KSA-ReGUI)'s `FlightData.cs`. The values the
   stock gauges show are read where the game computes them (`Program`'s gauge update), and
@@ -91,6 +92,8 @@ scripts/dev.sh call drag --data-urlencode "from=STAGE 2 ITEM 0" --data-urlencode
                                           # via=<id>&hold=<s> stops over a control on the way)
 scripts/dev.sh call wheel --data-urlencode "button=STAGE 3 ROW" --data-urlencode dy=1   # mouse wheel over a control
 scripts/dev.sh call hover --data-urlencode "button=STAGE 1 ITEM 1"   # hold the mouse over a control
+scripts/dev.sh call point --data-urlencode x=268 --data-urlencode y=13 --data-urlencode click=1
+                                          # click a point on screen (the game's menu bar: Mods); seconds=<s> holds it there
 scripts/dev.sh call burn --data-urlencode dv=100          # a test burn at the next apoapsis
 scripts/dev.sh call camera --data-urlencode mode=Map      # map view (Orbit: back to flight)
 scripts/dev.sh call target --data-urlencode id=Gemini7    # set a target (empty id clears it)

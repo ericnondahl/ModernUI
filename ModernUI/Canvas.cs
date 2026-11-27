@@ -31,10 +31,15 @@ public readonly struct Canvas
 		Size = new float2(pixels.X / _scale, DesignHeight);
 	}
 
+	/// <summary>
+	/// The whole screen, on ImGui's background draw list: under every ImGui window, so the
+	/// game's menu bar, its open menus and its windows draw over the HUD. (The foreground
+	/// list would draw over all of them.)
+	/// </summary>
 	public static Canvas ForScreen()
 	{
 		var io = ImGui.GetIO();
-		return new(ImGui.GetForegroundDrawList(), io.DisplaySize, io.DisplayFramebufferScale.Y);
+		return new(ImGui.GetBackgroundDrawList(), io.DisplaySize, io.DisplayFramebufferScale.Y);
 	}
 
 	/// <summary>Rounds an ImGui coordinate to the nearest physical pixel.</summary>

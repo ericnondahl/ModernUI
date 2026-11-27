@@ -31,6 +31,7 @@ public static class Commands
 			["/drag?from=<id>&to=<id>&at=top|middle|bottom&steps=<n>&via=<id>&hold=<s>"] = "press on one ModernUI control, move to another in n steps (a frame or two each), release there; at: where in the target (default middle); via: stop over that control for hold seconds on the way (a scroll strip, say)",
 			["/wheel?button=<id>&dy=<n>"] = "turn the mouse wheel over a ModernUI control (dy > 0: up)",
 			["/hover?button=<id>&seconds=<s>"] = "hold the mouse over a ModernUI control for a while (no click)",
+			["/point?x=<x>&y=<y>&click=0|1&seconds=<s>"] = "the mouse to a point on screen (ImGui units, as /buttons gives them), click there if click=1, and hold it there for a while: the game's own menus and windows",
 			["/burn?dv=<m/s>"] = "a prograde burn at the next apoapsis, selected for editing",
 			["/target?id=<vehicle or body>"] = "set the controlled vehicle's target (empty id clears it)",
 			["/key?name=<ImGuiKey>"] = "press and release a key through ImGui (P cycles the HUD's modes)",
@@ -435,6 +436,32 @@ public static class Commands
 			SyntheticMouse.Active = false;
 		}
 		return new { hovered = id, at = new[] { at.X, at.Y } };
+	}
+
+	// The mouse at a point, not a ModernUI control: the game's menu bar, a menu item. Stays
+	// there for the given time, so a submenu opens and a screenshot can catch it.
+	public static async Task<object?> Point(float x, float y, bool click, float seconds)
+	{
+		var at = new float2(x, y);
+		SyntheticMouse.Active = true;
+		try
+		{
+			await MouseTo(at);
+			await WaitFrames(3);
+			if (click)
+			{
+				await Bridge.OnGameThread(() => { ImGui.GetIO().AddMouseButtonEvent(0, true); return null; });
+				await WaitFrames(3);
+				await Bridge.OnGameThread(() => { ImGui.GetIO().AddMouseButtonEvent(0, false); return null; });
+				await WaitFrames(3);
+			}
+			await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(seconds, 0, 30)));
+		}
+		finally
+		{
+			SyntheticMouse.Active = false;
+		}
+		return new { at = new[] { x, y }, clicked = click };
 	}
 
 	// A burn at the next apoapsis, prograde dv m/s, made as the map's context menu makes one

@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace ModernUI;
 
 /// <summary>
-/// Clickable controls in the HUD's style. The HUD draws on ImGui's foreground list, which
+/// Clickable controls in the HUD's style. The HUD draws on ImGui's background list, which
 /// takes no input, so each group of controls sits in an invisible ImGui window: clicks on
 /// it go to the HUD, not to the game behind. Buttons are ImGui invisible buttons (hit
 /// testing, hover, press) with our own drawing on top.
