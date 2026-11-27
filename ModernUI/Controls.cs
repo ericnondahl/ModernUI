@@ -67,7 +67,7 @@ public static class Controls
 	}
 
 	static readonly ImColor8 Ink = new(0, 0, 0, 255);
-	static readonly ImColor8 Paper = new(255, 255, 255, 235);
+	static ImColor8 Paper => Theme.Ink(235);
 	static readonly ImColor8 Backing = new(0, 0, 0, 90);
 	public const float TextSize = 15;
 	const float Rounding = 3;
@@ -88,16 +88,16 @@ public static class Controls
 		var centre = (min + max) / 2;
 		if (lit)
 		{
-			c.FillRect(min, max, held ? new ImColor8(255, 255, 255, 170) : Paper, Rounding);
+			c.FillRect(min, max, held ? Theme.Ink(170) : Paper, Rounding);
 			c.Text(Fonts.SemiBold, TextSize, centre, Align.Center, Ink, label, tracking: 1.4f, shadow: false);
 		}
 		else
 		{
 			byte edge = disabled ? (byte)30 : hovered ? (byte)210 : (byte)100;
 			byte ink = disabled ? (byte)70 : hovered ? (byte)255 : (byte)220;
-			c.FillRect(min, max, held ? new ImColor8(255, 255, 255, 60) : Backing, Rounding);
-			c.Rect(min, max, new ImColor8(255, 255, 255, edge), 1.2f, Rounding);
-			c.Text(Fonts.SemiBold, TextSize, centre, Align.Center, new ImColor8(255, 255, 255, ink), label, tracking: 1.4f);
+			c.FillRect(min, max, held ? Theme.Ink(60) : Backing, Rounding);
+			c.Rect(min, max, Theme.Ink(edge), 1.2f, Rounding);
+			c.Text(Fonts.SemiBold, TextSize, centre, Align.Center, Theme.Ink(ink), label, tracking: 1.4f);
 		}
 		return clicked && !disabled;
 	}

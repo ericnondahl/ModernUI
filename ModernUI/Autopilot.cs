@@ -48,8 +48,8 @@ public static class Autopilot
 	const float GroupGap = 10;
 	const float SmallSize = 15;
 
-	static readonly ImColor8 Dim = new(255, 255, 255, 166);
-	static readonly ImColor8 White = new(255, 255, 255, 255);
+	static ImColor8 Dim => Theme.Ink(166);
+	static ImColor8 White => Theme.Ink(255);
 	static readonly ImColor8 Backing = new(0, 0, 0, 120);
 
 	public static float Width => LabelColumn + ButtonsWidth;

@@ -22,11 +22,11 @@ public static class Staging
 	const float SmallSize = 15;
 	const int MaxRows = 8;
 
-	static readonly ImColor8 White = new(255, 255, 255, 255);
-	static readonly ImColor8 Dim = new(255, 255, 255, 166);
-	static readonly ImColor8 Faint = new(255, 255, 255, 80);
+	static ImColor8 White => Theme.Ink(255);
+	static ImColor8 Dim => Theme.Ink(166);
+	static ImColor8 Faint => Theme.Ink(80);
 	static readonly ImColor8 Backing = new(0, 0, 0, 120);
-	static readonly ImColor8 NextFill = new(255, 255, 255, 34);
+	static ImColor8 NextFill => Theme.Ink(34);
 
 	// Column offsets in a row, from its left edge.
 	const float ColStage = 12, ColDeltaV = 190, ColTwr = 246, ColIsp = 302, ColBurn = 362, ColEnv = 392;

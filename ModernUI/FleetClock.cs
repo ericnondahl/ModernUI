@@ -22,8 +22,8 @@ public static class FleetClock
 
 	static readonly List<CrewEvent> Events = new(16);
 
-	static readonly ImColor8 White = new(255, 255, 255, 255);
-	static readonly ImColor8 Dim = new(255, 255, 255, 166);
+	static ImColor8 White => Theme.Ink(255);
+	static ImColor8 Dim => Theme.Ink(166);
 	static readonly ImColor8 Ink = new(0, 0, 0, 255);
 
 	/// <summary>Whether there is anything to show: the game's clock is on and hazards are in play.</summary>

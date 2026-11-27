@@ -38,6 +38,11 @@ Press **P** to cycle them, or pick one in **Mods → ModernUI mode** in the game
 hide stock gauges** keeps the stock gauges alongside it. F2, the game's hide-UI key, hides
 it too.
 
+**Mods → ModernUI colour** draws the whole HUD in amber, orange, cyan, green or pink
+instead of white.
+
+![The HUD in each colour: white, amber, orange, cyan, green, pink](images/colours.jpg)
+
 ## Install
 
 ModernUI is a code mod: it needs the [StarMap](https://github.com/StarMapLoader/StarMap)

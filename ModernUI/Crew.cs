@@ -24,10 +24,10 @@ public static class Crew
 	const float SmallSize = 14;
 	const int MaxCrew = 4;
 
-	static readonly ImColor8 White = new(255, 255, 255, 255);
-	static readonly ImColor8 Line = new(255, 255, 255, 220);
-	static readonly ImColor8 Dim = new(255, 255, 255, 166);
-	static readonly ImColor8 Faint = new(255, 255, 255, 70);
+	static ImColor8 White => Theme.Ink(255);
+	static ImColor8 Line => Theme.Ink(220);
+	static ImColor8 Dim => Theme.Ink(166);
+	static ImColor8 Faint => Theme.Ink(70);
 	static readonly ImColor8 Backing = new(0, 0, 0, 120);
 
 	// The stock dose gauge's working state (Program.UpdateDoseGauges keeps its own).
@@ -168,7 +168,7 @@ public static class Crew
 			var (label, value, alert) = systems[i];
 			c.Text(Fonts.Medium, SmallSize - 3, new float2(x, ry + 10), Align.Left, alert ? White : Dim, label, tracking: 1.6f);
 			if (alert)
-				c.FillRect(new float2(x - 4, ry + 20), new float2(x + colWidth - 12, ry + 40), new ImColor8(255, 255, 255, 230), 3);
+				c.FillRect(new float2(x - 4, ry + 20), new float2(x + colWidth - 12, ry + 40), Theme.Ink(230), 3);
 			c.Text(Fonts.SemiBold, SmallSize + 2, new float2(x, ry + 30), Align.Left, alert ? new ImColor8(0, 0, 0, 255) : White, value, tabular: true, shadow: !alert);
 		}
 
@@ -198,7 +198,7 @@ public static class Crew
 		float stroke = 1.6f;
 
 		// Helmet.
-		c.Circle(at, 31 * s, new ImColor8(255, 255, 255, 60), 1.2f);
+		c.Circle(at, 31 * s, Theme.Ink(60), 1.2f);
 
 		// Head: a slightly wide oval, a little low in the helmet.
 		var head = new float2[36];
@@ -317,7 +317,7 @@ public static class Crew
 		if (alerts.Count > 0)
 		{
 			float w = c.MeasureText(Fonts.SemiBold, SmallSize, summary, tracking: 1.4f);
-			c.FillRect(new float2(x + 6, top + 4), new float2(x + 18 + w, top + height - 4), new ImColor8(255, 255, 255, 230), 3);
+			c.FillRect(new float2(x + 6, top + 4), new float2(x + 18 + w, top + height - 4), Theme.Ink(230), 3);
 			c.Text(Fonts.SemiBold, SmallSize, new float2(x + 12, cy), Align.Left, new ImColor8(0, 0, 0, 255), summary, tracking: 1.4f, shadow: false);
 		}
 		else

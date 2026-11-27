@@ -18,8 +18,8 @@ public static class Rendezvous
 	const float SmallSize = 15;
 	const float Pad = 10;
 
-	static readonly ImColor8 White = new(255, 255, 255, 255);
-	static readonly ImColor8 Dim = new(255, 255, 255, 166);
+	static ImColor8 White => Theme.Ink(255);
+	static ImColor8 Dim => Theme.Ink(166);
 	static readonly ImColor8 Backing = new(0, 0, 0, 120);
 
 	/// <summary>Draws the card with its top right at (right, top) if a target is set; returns its bottom.</summary>

@@ -15,6 +15,10 @@ public enum HudMode
 	Full,
 }
 
+/// <summary>The colour the HUD draws in (see Theme).</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<HudColor>))]
+public enum HudColor { White, Amber, Orange, Cyan, Green, Pink }
+
 /// <summary>
 /// The player's choices, in ModernUI/settings.json in the game's profile folder
 /// (Constants.DocumentsFolderPath: the Borea instance's folder, or My Games/Kitten Space
@@ -30,6 +34,9 @@ public class Settings
 
 	/// <summary>How much of the HUD shows; the P key cycles it.</summary>
 	public HudMode Mode { get; set; } = HudMode.Flight;
+
+	/// <summary>The colour the HUD draws in; white unless the player picks another.</summary>
+	public HudColor Color { get; set; } = HudColor.White;
 
 	/// <summary>Whether the crew card is open (in FLIGHT mode; closed, it is one line).</summary>
 	public bool CrewOpen { get; set; }
