@@ -38,6 +38,16 @@ HUD. A fix that changes nothing on screen doesn't.
      -vf "crop=trunc(ih*16/9/2)*2:ih,scale=1920:1080:flags=lanczos" -q:v 3 images/flight-v3.jpg
    ```
 
+   On a 2x (Retina) display, a window half that size gives the same pixels, but the
+   frame is a little taller than 16:9: crop its height instead, from the top, so the menu
+   bar stays whole:
+
+   ```sh
+   KSA_WINDOW=1120x649 scripts/dev.sh restart       # 2240x1298 pixels
+   ffmpeg -i screenshots/flight-<time>.png \
+     -vf "crop=iw:trunc(iw*9/16/2)*2:0:0,scale=1920:1080:flags=lanczos" -q:v 3 images/flight-v3.jpg
+   ```
+
    Look at each image before using it: no panel overlaps another.
 2. **README:** point it at the new images.
 3. **Listing** (`docs/publishing/ModernUI.toml`): describe the new features, show new

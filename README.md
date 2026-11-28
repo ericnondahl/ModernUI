@@ -4,7 +4,7 @@ A flight HUD for [Kitten Space Agency](https://ksa.ahwoo.com) in the style of a 
 webcast: flat, black and white, thin rings and big numbers. It replaces every stock flight
 gauge, controls included, and stays out of the way when nothing needs you.
 
-![ModernUI in flight](images/flight-v2.jpg)
+![ModernUI in flight](images/flight-v3.jpg)
 
 | | |
 |---|---|
