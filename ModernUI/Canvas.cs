@@ -9,8 +9,10 @@ public enum Align { Left, Center, Right }
 /// <summary>
 /// One frame of drawing on the whole screen, in design units: the layout is made for a
 /// 1080-pixel-high screen and scales with the real height, so it keeps its proportions on
-/// a laptop window and on an ultrawide alike. All sizes and positions here are design
-/// units; Canvas turns them into pixels.
+/// a laptop window and on an ultrawide alike. A screen narrower than the layout's minimum
+/// width (a 4:3 window, half an ultrawide) scales with its width instead: everything gets
+/// smaller rather than overlapping, and the screen is more than 1080 units high. All sizes
+/// and positions here are design units; Canvas turns them into pixels.
 ///
 /// The game runs ImGui with multiple viewports, so ImGui positions are the desktop's: the
 /// game window's top left is the main viewport's position, which is (0, 0) only when the
@@ -22,7 +24,7 @@ public readonly struct Canvas
 	public const float DesignHeight = 1080f;
 
 	public readonly ImDrawListPtr Draw;
-	/// <summary>Screen size in design units (height is always 1080).</summary>
+	/// <summary>Screen size in design units: 1080 high, or more on a narrow screen.</summary>
 	public readonly float2 Size;
 	/// <summary>The game window's top left in ImGui coordinates (the main viewport's position).</summary>
 	readonly float2 _origin;
@@ -30,24 +32,25 @@ public readonly struct Canvas
 	// Physical pixels per ImGui unit (2 on a Retina display): text snaps to physical pixels.
 	readonly float _pixelsPerPoint;
 
-	Canvas(ImDrawListPtr draw, float2 origin, float2 pixels, float pixelsPerPoint)
+	Canvas(ImDrawListPtr draw, float2 origin, float2 pixels, float pixelsPerPoint, float minWidth)
 	{
 		Draw = draw;
 		_origin = origin;
 		_pixelsPerPoint = pixelsPerPoint > 0 ? pixelsPerPoint : 1;
-		_scale = pixels.Y / DesignHeight;
-		Size = new float2(pixels.X / _scale, DesignHeight);
+		_scale = Math.Min(pixels.Y / DesignHeight, pixels.X / minWidth);
+		Size = pixels / _scale;
 	}
 
 	/// <summary>
 	/// The game's window, on its viewport's background draw list: under every ImGui window,
 	/// so the game's menu bar, its open menus and its windows draw over the HUD. (The
-	/// foreground list would draw over all of them.)
+	/// foreground list would draw over all of them.) minWidth: the narrowest the layout
+	/// fits in, in design units; a narrower screen scales the layout down to fit it.
 	/// </summary>
-	public static Canvas ForScreen()
+	public static Canvas ForScreen(float minWidth)
 	{
 		var viewport = ImGui.GetMainViewport();
-		return new(ImGui.GetBackgroundDrawList(viewport), viewport.Pos, viewport.Size, ImGui.GetIO().DisplayFramebufferScale.Y);
+		return new(ImGui.GetBackgroundDrawList(viewport), viewport.Pos, viewport.Size, ImGui.GetIO().DisplayFramebufferScale.Y, minWidth);
 	}
 
 	/// <summary>The viewport the HUD is on (its regions go there too).</summary>

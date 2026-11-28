@@ -14,7 +14,9 @@
   stock gauges show are read where the game computes them (`Program`'s gauge update), and
   every control goes through the stock button's path (input buffers, `Vehicle.SetEnum`).
 - **Layout:** `Canvas.cs` works in design units for a 1080-pixel-high screen and scales
-  with the real height. The game runs ImGui with multiple viewports, so ImGui coordinates
+  with the real height. A screen narrower than the bottom row (`Hud.MinWidth`, 1900 units:
+  about 16:9) scales with its width instead, so a 4:3 or half-ultrawide window gets a
+  smaller HUD rather than an overlapping one. The game runs ImGui with multiple viewports, so ImGui coordinates
   are the desktop's: the game window's top left is the main viewport's position, (0, 0)
   only when the game fills the primary monitor. `Canvas` adds it to every point (`Px`)
   and takes it off the mouse (`Units`); sizes go through `PxSize`. The Mac port always

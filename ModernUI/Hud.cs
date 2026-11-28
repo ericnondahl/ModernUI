@@ -53,6 +53,10 @@ public static class Hud
 	const float ClockSize = 48;
 	const float NavballRadius = 96;
 	const float BarWidth = 250;
+	// The narrowest screen the bottom row fits across (design units): the rings and the orbit
+	// block, the navball with its pitch and roll and its frame buttons, the engine deck and
+	// the bars, with a little air between. Narrower screens scale the HUD down (see Canvas).
+	const float MinWidth = 1900;
 	const float BarStroke = 4;
 	const float BarRowGap = 42;
 	const int MaxPropellantBars = 4;
@@ -72,7 +76,7 @@ public static class Hud
 	public static void Draw(Telemetry t, KSA.Vehicle vehicle)
 	{
 		Showing = true;
-		var c = Canvas.ForScreen();
+		var c = Canvas.ForScreen(MinWidth);
 		Controls.BeginFrame();
 		var mode = Settings.Current.Mode;
 		bool clean = mode == HudMode.Clean, full = mode == HudMode.Full;
