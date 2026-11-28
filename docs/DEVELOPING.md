@@ -14,7 +14,11 @@
   stock gauges show are read where the game computes them (`Program`'s gauge update), and
   every control goes through the stock button's path (input buffers, `Vehicle.SetEnum`).
 - **Layout:** `Canvas.cs` works in design units for a 1080-pixel-high screen and scales
-  with the real height. Text is measured and laid out a character at a time: tabular
+  with the real height. The game runs ImGui with multiple viewports, so ImGui coordinates
+  are the desktop's: the game window's top left is the main viewport's position, (0, 0)
+  only when the game fills the primary monitor. `Canvas` adds it to every point (`Px`)
+  and takes it off the mouse (`Units`); sizes go through `PxSize`. The Mac port always
+  says (0, 0), so check windowed-mode placement with `/windowpos` (below). Text is measured and laid out a character at a time: tabular
   digits (numbers don't jitter), tracking for small capitals, caps centred vertically.
 - **Stock gauges:** a Harmony prefix on `GaugeCanvas.OnDrawUi` skips their drawing while
   the HUD shows. Their enabled flags and saved HUD layouts are untouched.
@@ -98,6 +102,9 @@ scripts/dev.sh call burn --data-urlencode dv=100          # a test burn at the n
 scripts/dev.sh call camera --data-urlencode mode=Map      # map view (Orbit: back to flight)
 scripts/dev.sh call target --data-urlencode id=Gemini7    # set a target (empty id clears it)
 scripts/dev.sh call key --data-urlencode name=P           # press a key through ImGui (P: next mode)
+scripts/dev.sh call windowpos --data-urlencode x=300 --data-urlencode y=200
+                                          # pretend the window is at (300, 200) on the desktop, as on
+                                          # Windows in windowed mode: drawing and clicks (not drags); 0 0 undoes it
 scripts/dev.sh call fault --data-urlencode at=button   # make ModernUI throw once mid-frame (draw, button, glitch; reset: back on)
 scripts/dev.sh console simspeed 10        # any game console command, with its log output
 scripts/dev.sh call set --data-urlencode enum=FlightComputerAttitudeTrackTarget --data-urlencode value=Prograde

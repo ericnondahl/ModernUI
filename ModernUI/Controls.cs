@@ -35,7 +35,10 @@ public static class Controls
 	public static void BeginRegion(Canvas c, string id, float2 min, float2 max)
 	{
 		ImGui.SetNextWindowPos(c.Px(min));
-		ImGui.SetNextWindowSize(c.Px(max - min));
+		ImGui.SetNextWindowSize(c.PxSize(max - min));
+		// On the game window's viewport, whatever ImGui would make of a region near its edge:
+		// a region in a viewport of its own becomes a separate (black) OS window.
+		ImGui.SetNextWindowViewport(Canvas.Viewport.ID);
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new float2(0, 0));
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, new float2(1, 1));
@@ -80,10 +83,10 @@ public static class Controls
 	{
 		var pMin = c.Px(min);
 		ImGui.SetCursorScreenPos(pMin);
-		bool clicked = ImGui.InvisibleButton($"##{id}", c.Px(max - min));
+		bool clicked = ImGui.InvisibleButton($"##{id}", c.PxSize(max - min));
 		bool hovered = ImGui.IsItemHovered() && !disabled;
 		bool held = ImGui.IsItemActive() && !disabled;
-		_building[id] = (pMin, pMin + c.Px(max - min));
+		_building[id] = (pMin, pMin + c.PxSize(max - min));
 
 		var centre = (min + max) / 2;
 		if (lit)
@@ -111,10 +114,10 @@ public static class Controls
 	{
 		var pMin = c.Px(min);
 		ImGui.SetCursorScreenPos(pMin);
-		bool clicked = ImGui.InvisibleButton($"##{id}", c.Px(max - min));
+		bool clicked = ImGui.InvisibleButton($"##{id}", c.PxSize(max - min));
 		hovered = ImGui.IsItemHovered();
 		held = ImGui.IsItemActive();
-		_building[id] = (pMin, pMin + c.Px(max - min));
+		_building[id] = (pMin, pMin + c.PxSize(max - min));
 		return clicked;
 	}
 

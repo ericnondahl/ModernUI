@@ -223,7 +223,7 @@ public static class Staging
 			MoreStrip(c, "STAGING MORE DOWN", left, y, up: false, sequences[0].Number, sequences[lo - 1].Number, lo - 1);
 		if (moreAbove || moreBelow)
 		{
-			var mouse = c.Units(1) * (float2)ImGui.GetMousePos();
+			var mouse = c.Units((float2)ImGui.GetMousePos());
 			float wheel = ImGui.GetIO().MouseWheel;
 			if (wheel != 0 && mouse.X >= left - pad && mouse.X <= right + pad && mouse.Y >= top && mouse.Y <= top + height)
 				_scrollLo = Math.Max(0, lo + Math.Sign(wheel));
@@ -243,7 +243,7 @@ public static class Staging
 	{
 		if (_drag is { } drag)
 		{
-			var mouse = c.Units(1) * (float2)ImGui.GetMousePos();
+			var mouse = c.Units((float2)ImGui.GetMousePos());
 			if (drag.Item is { } item)
 			{
 				var min = mouse - drag.ChipSize / 2;
@@ -282,7 +282,7 @@ public static class Staging
 		var min = new float2(left, top);
 		var max = new float2(left + Width, top + MoreHeight);
 		bool clicked = Controls.Area(c, id, min, max, out bool hovered, out _);
-		var mouse = c.Units(1) * (float2)ImGui.GetMousePos();
+		var mouse = c.Units((float2)ImGui.GetMousePos());
 		bool dragOver = _drag != null && mouse.X >= min.X && mouse.X <= max.X && mouse.Y >= min.Y && mouse.Y <= max.Y;
 		if (clicked)
 			_scrollLo = scrollTo;
@@ -674,7 +674,7 @@ public static class Staging
 	{
 		var drag = _drag!;
 		ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-		var mouse = c.Units(1) * (float2)ImGui.GetMousePos();
+		var mouse = c.Units((float2)ImGui.GetMousePos());
 		bool released = !ImGui.IsMouseDown(ImGuiMouseButton.Left);
 		Row? over = null;
 		if (mouse.X >= left - 10 && mouse.X <= left + Width + 10)
