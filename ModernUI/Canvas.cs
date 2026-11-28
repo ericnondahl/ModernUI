@@ -9,42 +9,57 @@ public enum Align { Left, Center, Right }
 /// <summary>
 /// One frame of drawing on the whole screen, in design units: the layout is made for a
 /// 1080-pixel-high screen and scales with the real height, so it keeps its proportions on
-/// a laptop window and on an ultrawide alike. All sizes and positions here are design
-/// units; Canvas turns them into pixels.
+/// a laptop window and on an ultrawide alike. A screen narrower than the layout's minimum
+/// width (a 4:3 window, half an ultrawide) scales with its width instead: everything gets
+/// smaller rather than overlapping, and the screen is more than 1080 units high. All sizes
+/// and positions here are design units; Canvas turns them into pixels.
+///
+/// The game runs ImGui with multiple viewports, so ImGui positions are the desktop's: the
+/// game window's top left is the main viewport's position, which is (0, 0) only when the
+/// game fills the primary monitor (full screen, borderless). In a window it is wherever the
+/// window is. Positions here are from the window's top left; Canvas adds the window's place.
 /// </summary>
 public readonly struct Canvas
 {
 	public const float DesignHeight = 1080f;
 
 	public readonly ImDrawListPtr Draw;
-	/// <summary>Screen size in design units (height is always 1080).</summary>
+	/// <summary>Screen size in design units: 1080 high, or more on a narrow screen.</summary>
 	public readonly float2 Size;
+	/// <summary>The game window's top left in ImGui coordinates (the main viewport's position).</summary>
+	readonly float2 _origin;
 	readonly float _scale;
 	// Physical pixels per ImGui unit (2 on a Retina display): text snaps to physical pixels.
 	readonly float _pixelsPerPoint;
 
-	Canvas(ImDrawListPtr draw, float2 pixels, float pixelsPerPoint)
+	Canvas(ImDrawListPtr draw, float2 origin, float2 pixels, float pixelsPerPoint, float minWidth)
 	{
 		Draw = draw;
+		_origin = origin;
 		_pixelsPerPoint = pixelsPerPoint > 0 ? pixelsPerPoint : 1;
-		_scale = pixels.Y / DesignHeight;
-		Size = new float2(pixels.X / _scale, DesignHeight);
+		_scale = Math.Min(pixels.Y / DesignHeight, pixels.X / minWidth);
+		Size = pixels / _scale;
 	}
 
 	/// <summary>
-	/// The whole screen, on ImGui's background draw list: under every ImGui window, so the
-	/// game's menu bar, its open menus and its windows draw over the HUD. (The foreground
-	/// list would draw over all of them.)
+	/// The game's window, on its viewport's background draw list: under every ImGui window,
+	/// so the game's menu bar, its open menus and its windows draw over the HUD. (The
+	/// foreground list would draw over all of them.) minWidth: the narrowest the layout
+	/// fits in, in design units; a narrower screen scales the layout down to fit it.
 	/// </summary>
-	public static Canvas ForScreen()
+	public static Canvas ForScreen(float minWidth)
 	{
-		var io = ImGui.GetIO();
-		return new(ImGui.GetBackgroundDrawList(), io.DisplaySize, io.DisplayFramebufferScale.Y);
+		var viewport = ImGui.GetMainViewport();
+		return new(ImGui.GetBackgroundDrawList(viewport), viewport.Pos, viewport.Size, ImGui.GetIO().DisplayFramebufferScale.Y, minWidth);
 	}
+
+	/// <summary>The viewport the HUD is on (its regions go there too).</summary>
+	public static ImGuiViewportPtr Viewport => ImGui.GetMainViewport();
 
 	/// <summary>Rounds an ImGui coordinate to the nearest physical pixel.</summary>
 	float Snap(float v) => MathF.Round(v * _pixelsPerPoint) / _pixelsPerPoint;
 
+	/// <summary>A length in design units to ImGui units.</summary>
 	public float Px(float units) => units * _scale;
 
 	/// <summary>Design units to ImGui units.</summary>
@@ -52,7 +67,15 @@ public readonly struct Canvas
 
 	/// <summary>An ImGui length in design units.</summary>
 	public float Units(float imgui) => imgui / _scale;
-	public float2 Px(float2 units) => units * _scale;
+
+	/// <summary>A point in design units to ImGui coordinates (on the desktop, see above).</summary>
+	public float2 Px(float2 units) => _origin + units * _scale;
+
+	/// <summary>A size in design units to ImGui units.</summary>
+	public float2 PxSize(float2 units) => units * _scale;
+
+	/// <summary>A point in ImGui coordinates (the mouse, say) in design units.</summary>
+	public float2 Units(float2 imgui) => (imgui - _origin) / _scale;
 
 	// ---- shapes ----
 
@@ -170,11 +193,12 @@ public readonly struct Canvas
 		var font = Fonts.Get(fontName);
 		float px = Px(size);
 		float width = Px(MeasureText(fontName, size, text, tracking, tabular));
-		float x = Px(at.X) - align switch { Align.Center => width / 2, Align.Right => width, _ => 0 };
+		var point = Px(at);
+		float x = point.X - align switch { Align.Center => width / 2, Align.Right => width, _ => 0 };
 		// ImGui places text by the top of its line; the caps' middle is the baseline minus
 		// half the cap height (Barlow's caps are 0.7 em).
 		var baked = font.GetFontBaked(px);
-		float y = Px(at.Y) - baked.Ascent + px * CapHeight / 2;
+		float y = point.Y - baked.Ascent + px * CapHeight / 2;
 
 		float digit = tabular ? Advance(font, px, '0') : 0;
 		// Whole physical pixels (not ImGui units, which are 2 pixels on a Retina display):

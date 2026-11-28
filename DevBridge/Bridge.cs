@@ -50,10 +50,15 @@ public class Bridge
 		_harmony?.UnpatchAll("DevBridge");
 	}
 
+	// After ImGui's new frame, before any UI: /windowpos's pretend window position.
+	[StarMapBeforeGui]
+	public void BeforeGui(double dt) => Commands.ApplyWindowPos();
+
 	[StarMapAfterOnFrame]
 	public void AfterOnFrame(double currentPlayerTime, double dtPlayer)
 	{
 		Frame++;
+		Commands.ApplyWindowPos();
 		while (GameThread.TryDequeue(out var job))
 		{
 			try { job.Done.SetResult(job.Work()); }
@@ -97,6 +102,7 @@ public class Bridge
 				"/newgame" => await OnGameThread(Commands.NewGame),
 				"/launch" => await OnGameThread(() => Commands.Launch(Arg("vehicle"), Arg("site"), query["id"])),
 				"/fly" => await OnGameThread(() => Commands.Fly(double.Parse(Arg("alt")), query["speed"] is { } s ? double.Parse(s) : null)),
+				"/windowpos" => await OnGameThread(() => Commands.WindowPos(int.Parse(Arg("x")), int.Parse(Arg("y")))),
 				"/mouse" => await Commands.MouseProbe(float.Parse(Arg("x")), float.Parse(Arg("y"))),
 				"/buttons" => await OnGameThread(Commands.ButtonNames),
 				"/click" => await Commands.Click(Arg("button")),

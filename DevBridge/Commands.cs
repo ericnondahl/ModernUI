@@ -38,6 +38,7 @@ public static class Commands
 			["/camera?mode=Orbit|Map|Free|IVA|Fixed"] = "switch the view (map view, flight view...)",
 			["/ui?show=0|1"] = "hide or show the game's whole UI (mods' too)",
 			["/fault?at=draw|button|glitch|reset"] = "make ModernUI throw once, to test its failsafe: draw, button (a missing method, as after a game update: the HUD switches off), glitch (an ordinary error: one frame skipped); reset turns it back on; without at, its failsafe state",
+			["/windowpos?x=<x>&y=<y>"] = "pretend the game window's top left is at (x, y) on the desktop, as on Windows in windowed mode (the Mac port says (0, 0) wherever it is): ImGui's main viewport and the mouse move there; drawing and clicks behave as on Windows, drags don't; (0, 0) puts it back",
 			["/wait?frames=<n>"] = "return after n more frames (default 60)",
 		},
 	};
@@ -306,10 +307,46 @@ public static class Commands
 			{
 				mouse = new[] { io.MousePos.X, io.MousePos.Y },
 				display = new[] { io.DisplaySize.X, io.DisplaySize.Y },
+				// With multi-viewports (the game's default), ImGui coordinates are the desktop's:
+				// the game window's top left is the main viewport's position, not (0, 0).
+				viewport = new[] { ImGui.GetMainViewport().Pos.X, ImGui.GetMainViewport().Pos.Y },
+				viewports = (io.ConfigFlags & ImGuiConfigFlags.ViewportsEnable) != 0,
 				wantCaptureMouse = io.WantCaptureMouse,
 				anyWindowHovered = ImGui.IsWindowHovered(ImGuiHoveredFlags.AnyWindow),
 			};
 		});
+	}
+
+	// Windows in windowed mode: the main viewport's position is the window's on the desktop,
+	// and every ImGui coordinate (drawing, windows, the mouse) is the desktop's. The Mac port
+	// reports (0, 0) wherever the window is, so a HUD that forgets the viewport looks right
+	// here and wrong on Windows. This pretends the window is at (x, y): the position GlfwWindow
+	// caches (its "_position", which the backend adds to the mouse) and the main viewport's,
+	// set again before the UI and at the end of each frame. ImGui's own new frame still puts
+	// the viewport at (0, 0) on the port, so drawing and clicks show what Windows does, but
+	// hover and drags across frames aren't reliable here.
+	static float2? _fakeWindowPos;
+	static object? _window;
+	static FieldInfo? _windowPosition;
+
+	public static object? WindowPos(int x, int y)
+	{
+		_window = GCHandle.FromIntPtr(ImGui.GetMainViewport().PlatformHandle).Target ?? throw new InvalidOperationException("no main window");
+		_windowPosition = _window.GetType().GetField("_position", BindingFlags.NonPublic | BindingFlags.Instance)
+			?? throw new MissingMemberException(_window.GetType().FullName, "_position");
+		_fakeWindowPos = new float2(x, y);
+		ApplyWindowPos();
+		if (x == 0 && y == 0)
+			_fakeWindowPos = null;
+		return new { window = new[] { x, y } };
+	}
+
+	public static void ApplyWindowPos()
+	{
+		if (_fakeWindowPos is not { } pos)
+			return;
+		_windowPosition?.SetValue(_window, new int2((int)pos.X, (int)pos.Y));
+		ImGui.GetMainViewport().Pos = pos;
 	}
 
 	public static object? ButtonNames() => new { buttons = HudButtons().Keys.OrderBy(k => k).ToArray() };
